@@ -1,24 +1,31 @@
 import java.util.ArrayList;
 
 // Stores and displays the tasks entered during a KafkaBot session
-public class TaskList {
+class TaskList {
     private static final String DIVIDER = "____________________________________________________________";
-    private final ArrayList<String> taskList;
+    private final ArrayList<Task> taskList;
 
-    // Creates an empty task list.
-    public TaskList() {
-        this.taskList = new ArrayList<>();
+    TaskList() {
+        taskList = new ArrayList<>();
     }
 
-    // Adds a task to the end of the private task list.
-    public void addTask(String task) {
-        taskList.add(task);
+    void addTask(String description) {
+        taskList.add(new Task(description));
     }
 
-    // Displays the private task list with numbered unchecked markers.
-    public void showTasks() {
+    // Marks the numbered task and returns its updated display text
+    String markTask(int taskNumber) {
+        return taskList.get(taskNumber - 1).mark();
+    }
+
+    // Unmarks the numbered task and returns its updated display text
+    String unmarkTask(int taskNumber) {
+        return taskList.get(taskNumber - 1).unmark();
+    }
+
+    void showTasks() {
         for (int i = 0; i < taskList.size(); i++) {
-            System.out.println((i + 1) + ".[ ] " + taskList.get(i));
+            System.out.println((i + 1) + "." + taskList.get(i).display());
         }
         System.out.println(DIVIDER);
     }
