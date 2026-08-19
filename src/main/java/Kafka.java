@@ -33,22 +33,11 @@ public class Kafka {
     }
 
 
-    // Reads and echoes messages until the user enters {bye}.
-    private static void uwuEcho() {
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            String input = scanner.nextLine();
-            if (input.equals("bye")) {
-                break;
-            }
-            System.out.println(makeUwu(input));
-        }
-        scanner.close();
-    }
-
-
-    // Process commands to KafkaBot, up to 100 commands at once
-    private static void commandKafka() {
+    /**
+     * Processes commands for KafkaBot and stores up to 100 tasks in memory.
+     * Package-private visibility allows the command loop to be unit tested.
+     */
+    static void commandKafka() {
         Scanner scanner = new Scanner(System.in);
         String[] tasks = new String[100];
         int taskCount = 0;
