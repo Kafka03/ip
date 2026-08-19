@@ -5,7 +5,7 @@ public class Kafka {
     private static final String DIVIDER = "____________________________________________________________";
     private static final String BANNER = "        /\\_/\\\n"
             + "       ( o.o )     K A F K A\n"
-            + "        > ^ <        \n";
+            + "        > 0 <        \n";
 
 
     // Runs the chatbot's greeting and farewell sequence.
@@ -20,18 +20,14 @@ public class Kafka {
             if (input.equals("bye")) {
                 break;
             } else if (input.equals("list")) {
-                System.out.println(DIVIDER);
                 System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
-                for (int i = 0; i < tasks.size(); i++) {
-                    System.out.println((i + 1) + ".[ ] " + tasks.getTask(i));
-                }
-                System.out.println(DIVIDER);
+                tasks.showTasks();
             } else {
                 String task = makeUwu(input);
                 tasks.addTask(task);
 
                 System.out.println(DIVIDER);
-                System.out.println("added: " + task);
+                System.out.println("(ꈍ ω ꈍ) added: " + task);
                 System.out.println(DIVIDER);
             }
         }
@@ -45,15 +41,15 @@ public class Kafka {
     private static void greet() {
         System.out.println(DIVIDER);
         System.out.print(BANNER);
-        System.out.println("Heyy skinny legend! >///< I'm Kafka.");
-        System.out.println("What can ur kitten do for you meow?");
+        System.out.println("Heyy skinny legend! (⊃✿ ･ิω･ิ)⊃ I'm Kafka.");
+        System.out.println("What can ur kitten do for you meow? (≧◡≦)");
         System.out.println(DIVIDER);
     }
 
 
     // Prints the farewell message before the program exits.
     private static void sayBye() {
-        System.out.println("Bye babe~ Hope to bump we bump into each other soon! ;)");
+        System.out.println("Bye babe~ Hope we bump into each other soon!");
         System.out.println(DIVIDER);
     }
 
