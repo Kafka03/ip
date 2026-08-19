@@ -53,34 +53,38 @@ class KafkaTest {
     }
 
     @Test
-    void commandKafkaAddsTask() {
-        System.setIn(new ByteArrayInputStream(
-                "read book\nbye\n".getBytes(StandardCharsets.UTF_8)));
-        Kafka.commandKafka();
+    void mainAddsTask() {
+        setInput("read book\nbye\n");
+        Kafka.main(new String[0]);
         String output = capturedOutput.toString(StandardCharsets.UTF_8);
 
         assertTrue(output.contains("added: read book uwu~"));
     }
 
     @Test
-    void commandKafkaListsStoredTasksInOrder() {
-        System.setIn(new ByteArrayInputStream(
-                "read book\nreturn book\nlist\nbye\n".getBytes(StandardCharsets.UTF_8)));
-        Kafka.commandKafka();
+    void mainListsStoredTasksInOrder() {
+        setInput("read book\nreturn book\nlist\nbye\n");
+        Kafka.main(new String[0]);
         String output = capturedOutput.toString(StandardCharsets.UTF_8);
 
-        int firstTaskPosition = output.indexOf("1. read book uwu~");
-        int secondTaskPosition = output.indexOf("2. return book uwu~");
+        int firstTaskPosition = output.indexOf("1.[ ] read book uwu~");
+        int secondTaskPosition = output.indexOf("2.[ ] return book uwu~");
         assertTrue(firstTaskPosition >= 0, "The first task should be displayed");
         assertTrue(secondTaskPosition > firstTaskPosition,
                 "The second task should be displayed after the first task");
     }
 
     @Test
-    void commandKafkaStopsImmediatelyOnBye() {
-        System.setIn(new ByteArrayInputStream("bye\n".getBytes(StandardCharsets.UTF_8)));
-        Kafka.commandKafka();
+    void mainStopsImmediatelyOnBye() {
+        setInput("bye\n");
+        Kafka.main(new String[0]);
 
-        assertEquals("", capturedOutput.toString(StandardCharsets.UTF_8));
+        String output = capturedOutput.toString(StandardCharsets.UTF_8);
+        assertTrue(output.contains("Bye babe~"));
+        assertTrue(!output.contains("added:"));
+    }
+
+    private void setInput(String input) {
+        System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
     }
 }
