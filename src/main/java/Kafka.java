@@ -7,12 +7,14 @@ public class Kafka {
             + "       ( o.o )     K A F K A\n"
             + "        > ^ <        \n";
 
+
     // Runs the chatbot's greeting and farewell sequence.
     public static void main(String[] args) {
         greet();
-        uwuEcho();
+        commandKafka();
         sayBye();
     }
+
 
     // Prints the chatbot banner and welcome message
     private static void greet() {
@@ -23,11 +25,13 @@ public class Kafka {
         System.out.println(DIVIDER);
     }
 
+
     // Prints the farewell message before the program exits.
     private static void sayBye() {
         System.out.println("Bye babe~ Hope to bump we bump into each other soon! ;)");
         System.out.println(DIVIDER);
     }
+
 
     // Reads and echoes messages until the user enters {bye}.
     private static void uwuEcho() {
@@ -43,9 +47,42 @@ public class Kafka {
     }
 
 
+    // Process commands to KafkaBot, up to 100 commands at once
+    private static void commandKafka() {
+        Scanner scanner = new Scanner(System.in);
+        String[] tasks = new String[100];
+        int taskCount = 0;
+
+        while (true) {
+            String input = scanner.nextLine();
+
+            if (input.equals("bye")) {
+                break;
+            } else if (input.equals("list")) {
+                System.out.println(DIVIDER);
+                System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
+                for (int i = 0; i < taskCount; i++) {
+                    System.out.println((i + 1) + ". " + tasks[i]);
+                }
+                System.out.println(DIVIDER);
+            } else {
+                tasks[taskCount] = makeUwu(input);
+                taskCount++;
+
+                System.out.println(DIVIDER);
+                System.out.println("added: " + makeUwu(input));
+                System.out.println(DIVIDER);
+            }
+        }
+
+    }
+
 
     //Converts a message to Kafka's uwu style.
     static String makeUwu(String input) {
         return input.replace('l', 'w').replace('L', 'W') + " uwu~";
     }
+
+
+
 }
