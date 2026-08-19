@@ -62,6 +62,24 @@ class KafkaTest {
     }
 
     @Test
+    void mainAddsAndListsTypedTasks() {
+        setInput("todo borrow book\n"
+                + "deadline return book /by Sunday\n"
+                + "event project meeting /from Mon 2pm /to 4pm\n"
+                + "list\nbye\n");
+        Kafka.main(new String[0]);
+        String output = capturedOutput.toString(StandardCharsets.UTF_8);
+
+        assertTrue(output.contains("[T][ ] borrow book"));
+        assertTrue(output.contains("[D][ ] return book (by: Sunday)"));
+        assertTrue(output.contains("[E][ ] project meeting (from: Mon 2pm to: 4pm)"));
+        assertTrue(output.contains("Now you have 3 tasks in the list."));
+        assertTrue(output.contains("1.[T][ ] borrow book"));
+        assertTrue(output.contains("2.[D][ ] return book (by: Sunday)"));
+        assertTrue(output.contains("3.[E][ ] project meeting (from: Mon 2pm to: 4pm)"));
+    }
+
+    @Test
     void mainListsStoredTasksInOrder() {
         setInput("read book\nreturn book\nlist\nbye\n");
         Kafka.main(new String[0]);

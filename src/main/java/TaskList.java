@@ -10,7 +10,17 @@ class TaskList {
     }
 
     void addTask(String description) {
-        taskList.add(new Task(description));
+        addTask(new Task(description));
+    }
+
+    // Adds a task
+    void addTask(Task task) {
+        taskList.add(task);
+    }
+
+    // Returns the number of tasks currently stored in this list
+    int size() {
+        return taskList.size();
     }
 
     // Marks the numbered task and returns its updated display text
