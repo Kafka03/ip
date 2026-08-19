@@ -21,14 +21,45 @@ public class Kafka {
                 break;
 
             } else if (input.equals("list")) {
+                System.out.println(DIVIDER);
                 System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
                 tasks.showTasks();
+
+            } else if (input.startsWith("todo ")) {
+                Task todo = new Todo(input.substring("todo ".length()));
+                tasks.addTask(todo);
+                showTaskAdded(todo, tasks.size());
+
+            } else if (input.startsWith("deadline ")) {
+                String taskDetails = input.substring("deadline ".length());
+                String byMarker = " /by ";
+                int byMarkerPosition = taskDetails.indexOf(byMarker);
+                String description = taskDetails.substring(0, byMarkerPosition);
+                String by = taskDetails.substring(byMarkerPosition + byMarker.length());
+                Task deadline = new Deadline(description, by);
+                tasks.addTask(deadline);
+                showTaskAdded(deadline, tasks.size());
+
+            } else if (input.startsWith("event ")) {
+                String taskDetails = input.substring("event ".length());
+                String fromMarker = " /from ";
+                String toMarker = " /to ";
+                int fromMarkerPosition = taskDetails.indexOf(fromMarker);
+                int toMarkerPosition = taskDetails.indexOf(toMarker,
+                        fromMarkerPosition + fromMarker.length());
+                String description = taskDetails.substring(0, fromMarkerPosition);
+                String from = taskDetails.substring(fromMarkerPosition + fromMarker.length(),
+                        toMarkerPosition);
+                String to = taskDetails.substring(toMarkerPosition + toMarker.length());
+                Task event = new Event(description, from, to);
+                tasks.addTask(event);
+                showTaskAdded(event, tasks.size());
 
             } else if (input.startsWith("mark ")) {
                 int taskNumber = Integer.parseInt(input.substring(5));
                 String markedTask = tasks.markTask(taskNumber);
                 System.out.println(DIVIDER);
-                System.out.println("Ur such a baddie! I've marked this task as done:");
+                System.out.println("Ur such a baddie!! I've marked this task as done:");
                 System.out.println("  " + markedTask);
                 System.out.println(DIVIDER);
 
@@ -52,6 +83,15 @@ public class Kafka {
 
         sayBye();
         scanner.close();
+    }
+
+    // Confirms that a typed task was added and displays the updated task count.
+    private static void showTaskAdded(Task task, int taskCount) {
+        System.out.println(DIVIDER);
+        System.out.println("Yippee!!! I've added this task:");
+        System.out.println("  " + task.display());
+        System.out.println("Now you have " + taskCount + " tasks in the list. What a legend.");
+        System.out.println(DIVIDER);
     }
 
 
