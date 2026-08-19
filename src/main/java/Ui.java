@@ -51,10 +51,10 @@ class Ui {
         System.out.println(DIVIDER);
     }
 
-    // Displays the original response for a task without a typed command.
-    void showPlainTaskAdded(String task) {
+    // Explains that unrecognized input cannot be added as a task.
+    void showUnknownCommand() {
         System.out.println(DIVIDER);
-        System.out.println("(ꈍ ω ꈍ) added: " + task);
+        System.out.println("Sowwy I don't know that command... pwease try todo, deadline, event, list, mark, unmark, or bye.");
         System.out.println(DIVIDER);
     }
 

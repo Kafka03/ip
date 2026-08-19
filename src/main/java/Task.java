@@ -1,5 +1,5 @@
 // A task with a name and completion state
-class Task {
+abstract class Task {
     private final String name;
     private boolean isDone;
 

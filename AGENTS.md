@@ -33,3 +33,32 @@ Ensure that Java 25 is used when running the application or build tasks. On macO
 Use lightweight tags unless the user requests an annotated tag.
 When proposing or creating a commit message, include enough detail to explain the rationale for the change.
 Do not commit or push unless explicitly asked.
+
+
+## Git message standard
+Commit message: Subject
+ Every commit must have a well-written commit message subject line.
+
+Try to limit the subject line to 50 characters (hard limit: 72 chars)
+Rationale: Some tools show only a limited number of characters from the commit message.
+
+ Use the imperative mood in the subject line.
+
+ Good: Add README.md
+ Bad: Added README.md
+ Bad: Adding README.md
+ Capitalize the first letter of the subject line.
+
+ Good: Move index.html file to root
+ Bad: move index.html file to root
+ Do not end the subject line with a period.
+
+ Good: Update sample data
+ Bad: Update sample data.
+You may add a <scope>: or <category>: in front, when applicable.
+
+e.g. Person class: Remove static imports
+Main.java: Remove blank lines
+bug fix: Add space after name
+chore: Update release date
+There are other commit subject conventions such as the Conventional Commits Format which are more elaborate but have additional benefits.
