@@ -1,5 +1,6 @@
 import java.util.Scanner;
 
+//Runs the Kafka chatbot and echoes messages in an uwu style.
 public class Kafka {
     private static final String DIVIDER = "____________________________________________________________";
     private static final String BANNER = "        /\\_/\\\n"
@@ -28,16 +29,23 @@ public class Kafka {
         System.out.println(DIVIDER);
     }
 
+    // Reads and echoes messages until the user enters {bye}.
     private static void uwuEcho() {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String input = scanner.nextLine();
             if (input.equals("bye")) {
-                break;  
+                break;
             }
-            String uwuInput = input.replace('l', 'w').replace('L', 'W');
-            System.out.println(uwuInput + " uwu~");
+            System.out.println(makeUwu(input));
         }
         scanner.close();
+    }
+
+
+
+    //Converts a message to Kafka's uwu style.
+    static String makeUwu(String input) {
+        return input.replace('l', 'w').replace('L', 'W') + " uwu~";
     }
 }
