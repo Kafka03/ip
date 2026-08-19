@@ -82,9 +82,9 @@ class KafkaTest {
 
         int markedPosition = output.indexOf("1.[X] read book uwu~");
         int unmarkedPosition = output.indexOf("1.[ ] read book uwu~", markedPosition);
-        assertTrue(output.contains("Nice! I've marked this task as done:"));
+        assertTrue(output.contains("Ur such a baddie!! I've marked this task as done:"));
         assertTrue(output.contains("  [X] read book uwu~"));
-        assertTrue(output.contains("OK, I've marked this task as not done yet:"));
+        assertTrue(output.contains("Awww issok my g, I've marked this task as not done yet:"));
         assertTrue(output.contains("  [ ] read book uwu~"));
         assertTrue(markedPosition >= 0, "The task should be marked as completed");
         assertTrue(unmarkedPosition > markedPosition,
