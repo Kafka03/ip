@@ -19,9 +19,27 @@ public class Kafka {
 
             if (input.equals("bye")) {
                 break;
+
             } else if (input.equals("list")) {
                 System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
                 tasks.showTasks();
+
+            } else if (input.startsWith("mark ")) {
+                int taskNumber = Integer.parseInt(input.substring(5));
+                String markedTask = tasks.markTask(taskNumber);
+                System.out.println(DIVIDER);
+                System.out.println("Nice! I've marked this task as done:");
+                System.out.println("  " + markedTask);
+                System.out.println(DIVIDER);
+
+            } else if (input.startsWith("unmark ")) {
+                int taskNumber = Integer.parseInt(input.substring(7));
+                String unmarkedTask = tasks.unmarkTask(taskNumber);
+                System.out.println(DIVIDER);
+                System.out.println("OK, I've marked this task as not done yet:");
+                System.out.println("  " + unmarkedTask);
+                System.out.println(DIVIDER);
+                
             } else {
                 String task = makeUwu(input);
                 tasks.addTask(task);
@@ -58,7 +76,5 @@ public class Kafka {
     static String makeUwu(String input) {
         return input.replace('l', 'w').replace('L', 'W') + " uwu~";
     }
-
-
 
 }

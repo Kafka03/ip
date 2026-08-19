@@ -75,6 +75,23 @@ class KafkaTest {
     }
 
     @Test
+    void mainMarksAndUnmarksTask() {
+        setInput("read book\nmark 1\nlist\nunmark 1\nlist\nbye\n");
+        Kafka.main(new String[0]);
+        String output = capturedOutput.toString(StandardCharsets.UTF_8);
+
+        int markedPosition = output.indexOf("1.[X] read book uwu~");
+        int unmarkedPosition = output.indexOf("1.[ ] read book uwu~", markedPosition);
+        assertTrue(output.contains("Nice! I've marked this task as done:"));
+        assertTrue(output.contains("  [X] read book uwu~"));
+        assertTrue(output.contains("OK, I've marked this task as not done yet:"));
+        assertTrue(output.contains("  [ ] read book uwu~"));
+        assertTrue(markedPosition >= 0, "The task should be marked as completed");
+        assertTrue(unmarkedPosition > markedPosition,
+                "The task should be unmarked after it was marked");
+    }
+
+    @Test
     void mainStopsImmediatelyOnBye() {
         setInput("bye\n");
         Kafka.main(new String[0]);
