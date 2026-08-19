@@ -47,7 +47,7 @@ public class Kafka {
         } else if (input.startsWith("unmark ")) {
             unmarkTask(input);
         } else {
-            addPlainTask(input);
+            showUnknownCommand();
         }
     }
 
@@ -91,15 +91,8 @@ public class Kafka {
         ui.showTaskUnmarked(unmarkedTask);
     }
 
-    // Preserves the original behavior for input without a recognized command.
-    private void addPlainTask(String input) {
-        String task = makeUwu(input);
-        tasks.addTask(task);
-        ui.showPlainTaskAdded(task);
-    }
-
-    // Converts a message to Kafka's uwu style.
-    static String makeUwu(String input) {
-        return input.replace('l', 'w').replace('L', 'W') + " uwu~";
+    // Tells the user that their input was not a recognized command.
+    private void showUnknownCommand() {
+        ui.showUnknownCommand();
     }
 }

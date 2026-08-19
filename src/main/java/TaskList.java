@@ -9,10 +9,6 @@ class TaskList {
         taskList = new ArrayList<>();
     }
 
-    void addTask(String description) {
-        addTask(new Task(description));
-    }
-
     // Adds a task
     void addTask(Task task) {
         taskList.add(task);
