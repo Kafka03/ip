@@ -1,120 +1,105 @@
-import java.util.Scanner;
-
-//Runs the Kafka chatbot and echoes messages in an uwu style.
+/**
+ * Runs the Kafka chatbot and coordinates commands between the UI, parser,
+ * and task list.
+ */
 public class Kafka {
-    private static final String DIVIDER = "____________________________________________________________";
-    private static final String BANNER = "        /\\_/\\\n"
-            + "       ( o.o )     K A F K A\n"
-            + "        > 0 <        \n";
+    private final Ui ui;
+    private final TaskList tasks;
 
+    Kafka() {
+        this.ui = new Ui();
+        this.tasks = new TaskList();
+    }
 
-    // Runs the chatbot's greeting and farewell sequence.
+    // Starts a Kafka chatbot session.
     public static void main(String[] args) {
-        greet();
-        Scanner scanner = new Scanner(System.in);
-        TaskList tasks = new TaskList();
+        new Kafka().run();
+    }
+
+    // Reads and processes commands until the user exits.
+    private void run() {
+        ui.greet();
 
         while (true) {
-            String input = scanner.nextLine();
-
+            String input = ui.readCommand();
             if (input.equals("bye")) {
                 break;
-
-            } else if (input.equals("list")) {
-                System.out.println(DIVIDER);
-                System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
-                tasks.showTasks();
-
-            } else if (input.startsWith("todo ")) {
-                Task todo = new Todo(input.substring("todo ".length()));
-                tasks.addTask(todo);
-                showTaskAdded(todo, tasks.size());
-
-            } else if (input.startsWith("deadline ")) {
-                String taskDetails = input.substring("deadline ".length());
-                String byMarker = " /by ";
-                int byMarkerPosition = taskDetails.indexOf(byMarker);
-                String description = taskDetails.substring(0, byMarkerPosition);
-                String by = taskDetails.substring(byMarkerPosition + byMarker.length());
-                Task deadline = new Deadline(description, by);
-                tasks.addTask(deadline);
-                showTaskAdded(deadline, tasks.size());
-
-            } else if (input.startsWith("event ")) {
-                String taskDetails = input.substring("event ".length());
-                String fromMarker = " /from ";
-                String toMarker = " /to ";
-                int fromMarkerPosition = taskDetails.indexOf(fromMarker);
-                int toMarkerPosition = taskDetails.indexOf(toMarker,
-                        fromMarkerPosition + fromMarker.length());
-                String description = taskDetails.substring(0, fromMarkerPosition);
-                String from = taskDetails.substring(fromMarkerPosition + fromMarker.length(),
-                        toMarkerPosition);
-                String to = taskDetails.substring(toMarkerPosition + toMarker.length());
-                Task event = new Event(description, from, to);
-                tasks.addTask(event);
-                showTaskAdded(event, tasks.size());
-
-            } else if (input.startsWith("mark ")) {
-                int taskNumber = Integer.parseInt(input.substring(5));
-                String markedTask = tasks.markTask(taskNumber);
-                System.out.println(DIVIDER);
-                System.out.println("Ur such a baddie!! I've marked this task as done:");
-                System.out.println("  " + markedTask);
-                System.out.println(DIVIDER);
-
-            } else if (input.startsWith("unmark ")) {
-                int taskNumber = Integer.parseInt(input.substring(7));
-                String unmarkedTask = tasks.unmarkTask(taskNumber);
-                System.out.println(DIVIDER);
-                System.out.println("Awww issok my g, I've marked this task as not done yet:");
-                System.out.println("  " + unmarkedTask);
-                System.out.println(DIVIDER);
-
-            } else {
-                String task = makeUwu(input);
-                tasks.addTask(task);
-
-                System.out.println(DIVIDER);
-                System.out.println("(ꈍ ω ꈍ) added: " + task);
-                System.out.println(DIVIDER);
             }
+            processCommand(input);
         }
 
-        sayBye();
-        scanner.close();
+        ui.sayBye();
+        ui.close();
     }
 
-    // Confirms that a typed task was added and displays the updated task count.
-    private static void showTaskAdded(Task task, int taskCount) {
-        System.out.println(DIVIDER);
-        System.out.println("Yippee!!! I've added this task:");
-        System.out.println("  " + task.display());
-        System.out.println("Now you have " + taskCount + " tasks in the list. What a legend.");
-        System.out.println(DIVIDER);
+    // Sends each command to the method responsible for handling it.
+    private void processCommand(String input) {
+        if (input.equals("list")) {
+            showList();
+        } else if (input.startsWith("todo ")) {
+            addTodo(input);
+        } else if (input.startsWith("deadline ")) {
+            addDeadline(input);
+        } else if (input.startsWith("event ")) {
+            addEvent(input);
+        } else if (input.startsWith("mark ")) {
+            markTask(input);
+        } else if (input.startsWith("unmark ")) {
+            unmarkTask(input);
+        } else {
+            addPlainTask(input);
+        }
     }
 
-
-    // Prints the chatbot banner and welcome message
-    private static void greet() {
-        System.out.println(DIVIDER);
-        System.out.print(BANNER);
-        System.out.println("Heyy skinny legend! (⊃✿ ･ิω･ิ)⊃ I'm Kafka.");
-        System.out.println("What can ur kitten do for you meow? (≧◡≦)");
-        System.out.println(DIVIDER);
+    // Displays all tasks in their current order.
+    private void showList() {
+        ui.showTaskList(tasks);
     }
 
-
-    // Prints the farewell message before the program exits.
-    private static void sayBye() {
-        System.out.println("Bye babe~ Hope we bump into each other soon!");
-        System.out.println(DIVIDER);
+    // Parses and adds a todo.
+    private void addTodo(String input) {
+        addAndShow(TaskParser.parseTodo(input));
     }
 
+    // Parses and adds a deadline.
+    private void addDeadline(String input) {
+        addAndShow(TaskParser.parseDeadline(input));
+    }
 
-    //Converts a message to Kafka's uwu style.
+    // Parses and adds an event.
+    private void addEvent(String input) {
+        addAndShow(TaskParser.parseEvent(input));
+    }
+
+    // Stores a typed task and displays the result.
+    private void addAndShow(Task task) {
+        tasks.addTask(task);
+        ui.showTaskAdded(task, tasks.size());
+    }
+
+    // Marks the task number supplied by the user.
+    private void markTask(String input) {
+        int taskNumber = Integer.parseInt(input.substring("mark ".length()));
+        String markedTask = tasks.markTask(taskNumber);
+        ui.showTaskMarked(markedTask);
+    }
+
+    // Unmarks the task number supplied by the user.
+    private void unmarkTask(String input) {
+        int taskNumber = Integer.parseInt(input.substring("unmark ".length()));
+        String unmarkedTask = tasks.unmarkTask(taskNumber);
+        ui.showTaskUnmarked(unmarkedTask);
+    }
+
+    // Preserves the original behavior for input without a recognized command.
+    private void addPlainTask(String input) {
+        String task = makeUwu(input);
+        tasks.addTask(task);
+        ui.showPlainTaskAdded(task);
+    }
+
+    // Converts a message to Kafka's uwu style.
     static String makeUwu(String input) {
         return input.replace('l', 'w').replace('L', 'W') + " uwu~";
     }
-
 }
