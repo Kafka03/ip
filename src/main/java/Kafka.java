@@ -28,7 +28,7 @@ public class Kafka {
                 int taskNumber = Integer.parseInt(input.substring(5));
                 String markedTask = tasks.markTask(taskNumber);
                 System.out.println(DIVIDER);
-                System.out.println("Nice! I've marked this task as done:");
+                System.out.println("Ur such a baddie! I've marked this task as done:");
                 System.out.println("  " + markedTask);
                 System.out.println(DIVIDER);
 
@@ -36,10 +36,10 @@ public class Kafka {
                 int taskNumber = Integer.parseInt(input.substring(7));
                 String unmarkedTask = tasks.unmarkTask(taskNumber);
                 System.out.println(DIVIDER);
-                System.out.println("OK, I've marked this task as not done yet:");
+                System.out.println("Awww issok my g, I've marked this task as not done yet:");
                 System.out.println("  " + unmarkedTask);
                 System.out.println(DIVIDER);
-                
+
             } else {
                 String task = makeUwu(input);
                 tasks.addTask(task);
