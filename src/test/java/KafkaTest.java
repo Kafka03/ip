@@ -1,4 +1,4 @@
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -11,15 +11,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-//Tests Kafka java file
+/**
+ * Tests complete Kafka command sessions through console input and output.
+ */
 class KafkaTest {
     private InputStream originalInput;
     private PrintStream originalOutput;
     private ByteArrayOutputStream capturedOutput;
 
-    /**
-     * Saves the real console streams and prepares a fresh output stream for each test.
-     */
     @BeforeEach
     void setUpConsole() {
         originalInput = System.in;
@@ -28,9 +27,6 @@ class KafkaTest {
         System.setOut(new PrintStream(capturedOutput, true, StandardCharsets.UTF_8));
     }
 
-    /**
-     * Restores the real console streams after each test.
-     */
     @AfterEach
     void restoreConsole() {
         System.setIn(originalInput);
@@ -38,88 +34,88 @@ class KafkaTest {
     }
 
     @Test
-    void replacesLowercaseAndUppercaseL() {
-        assertEquals("Hewwo Wiwy uwu~", Kafka.makeUwu("Hello Lily"));
-    }
-
-    @Test
-    void leavesOtherCharactersUnchanged() {
-        assertEquals("cat uwu~", Kafka.makeUwu("cat"));
-    }
-
-    @Test
-    void handlesEmptyInput() {
-        assertEquals(" uwu~", Kafka.makeUwu(""));
-    }
-
-    @Test
-    void mainAddsTask() {
-        setInput("read book\nbye\n");
-        Kafka.main(new String[0]);
-        String output = capturedOutput.toString(StandardCharsets.UTF_8);
-
-        assertTrue(output.contains("added: read book uwu~"));
-    }
-
-    @Test
     void mainAddsAndListsTypedTasks() {
-        setInput("todo borrow book\n"
+        String output = runKafka("todo borrow book\n"
                 + "deadline return book /by Sunday\n"
                 + "event project meeting /from Mon 2pm /to 4pm\n"
                 + "list\nbye\n");
-        Kafka.main(new String[0]);
-        String output = capturedOutput.toString(StandardCharsets.UTF_8);
 
-        assertTrue(output.contains("[T][ ] borrow book"));
-        assertTrue(output.contains("[D][ ] return book (by: Sunday)"));
-        assertTrue(output.contains("[E][ ] project meeting (from: Mon 2pm to: 4pm)"));
-        assertTrue(output.contains("Now you have 3 tasks in the list."));
         assertTrue(output.contains("1.[T][ ] borrow book"));
         assertTrue(output.contains("2.[D][ ] return book (by: Sunday)"));
-        assertTrue(output.contains("3.[E][ ] project meeting (from: Mon 2pm to: 4pm)"));
+        assertTrue(output.contains(
+                "3.[E][ ] project meeting (from: Mon 2pm to: 4pm)"));
+        assertTrue(output.contains("Now you have 3 tasks in the list."));
     }
 
     @Test
-    void mainListsStoredTasksInOrder() {
-        setInput("read book\nreturn book\nlist\nbye\n");
-        Kafka.main(new String[0]);
-        String output = capturedOutput.toString(StandardCharsets.UTF_8);
+    void mainMarksAndUnmarksTypedTask() {
+        String output = runKafka("todo read book\nmark 1\nlist\nunmark 1\nlist\nbye\n");
 
-        int firstTaskPosition = output.indexOf("1.[ ] read book uwu~");
-        int secondTaskPosition = output.indexOf("2.[ ] return book uwu~");
-        assertTrue(firstTaskPosition >= 0, "The first task should be displayed");
-        assertTrue(secondTaskPosition > firstTaskPosition,
-                "The second task should be displayed after the first task");
-    }
-
-    @Test
-    void mainMarksAndUnmarksTask() {
-        setInput("read book\nmark 1\nlist\nunmark 1\nlist\nbye\n");
-        Kafka.main(new String[0]);
-        String output = capturedOutput.toString(StandardCharsets.UTF_8);
-
-        int markedPosition = output.indexOf("1.[X] read book uwu~");
-        int unmarkedPosition = output.indexOf("1.[ ] read book uwu~", markedPosition);
-        assertTrue(output.contains("Ur such a baddie!! I've marked this task as done:"));
-        assertTrue(output.contains("  [X] read book uwu~"));
-        assertTrue(output.contains("Awww issok my g, I've marked this task as not done yet:"));
-        assertTrue(output.contains("  [ ] read book uwu~"));
-        assertTrue(markedPosition >= 0, "The task should be marked as completed");
+        int markedPosition = output.indexOf("1.[T][X] read book");
+        int unmarkedPosition = output.indexOf("1.[T][ ] read book", markedPosition);
+        assertTrue(markedPosition >= 0, "The task should be marked");
         assertTrue(unmarkedPosition > markedPosition,
-                "The task should be unmarked after it was marked");
+                "The task should later be unmarked");
+    }
+
+    @Test
+    void mainDeletesTaskAndShiftsRemainingTasks() {
+        String output = runKafka("todo first\n"
+                + "deadline second /by Sunday\n"
+                + "event third /from Monday /to Tuesday\n"
+                + "delete 2\nlist\nbye\n");
+
+        assertTrue(output.contains("Aight. I've yeeted this task:"));
+        assertTrue(output.contains("[D][ ] second (by: Sunday)"));
+        assertTrue(output.contains("1.[T][ ] first"));
+        assertTrue(output.contains("2.[E][ ] third (from: Monday to: Tuesday)"));
+        assertFalse(output.contains("2.[D][ ] second (by: Sunday)"));
+    }
+
+    @Test
+    void invalidCommandsDoNotCorruptTaskState() {
+        String output = runKafka("todo read book\n"
+                + "deadline broken /by\n"
+                + "event meeting /from Monday /to Tuesday\n"
+                + "mark abc\n"
+                + "mark 1\n"
+                + "event broken /from /to Friday\n"
+                + "unmark 3\n"
+                + "deadline submit report /by Sunday\n"
+                + "list\nbye\n");
+
+        assertTrue(output.contains("1.[T][X] read book"));
+        assertTrue(output.contains(
+                "2.[E][ ] meeting (from: Monday to: Tuesday)"));
+        assertTrue(output.contains("3.[D][ ] submit report (by: Sunday)"));
+        assertFalse(output.contains("4."));
+        assertTrue(output.contains("deadline date or time cannot be empty"));
+        assertTrue(output.contains("whole number"));
+        assertTrue(output.contains("event start or end cannot be empty"));
+        assertTrue(output.contains("There is no task with that number"));
+    }
+
+    @Test
+    void unknownCommandDoesNotAddTask() {
+        String output = runKafka("Event invalid /from Monday /to Tuesday\n"
+                + "todo valid\nlist\nbye\n");
+
+        assertTrue(output.contains("I don't know that command"));
+        assertTrue(output.contains("1.[T][ ] valid"));
+        assertFalse(output.contains("2."));
     }
 
     @Test
     void mainStopsImmediatelyOnBye() {
-        setInput("bye\n");
-        Kafka.main(new String[0]);
+        String output = runKafka("bye\n");
 
-        String output = capturedOutput.toString(StandardCharsets.UTF_8);
         assertTrue(output.contains("Bye babe~"));
-        assertTrue(!output.contains("added:"));
+        assertFalse(output.contains("I've added this task"));
     }
 
-    private void setInput(String input) {
+    private String runKafka(String input) {
         System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
+        Kafka.main(new String[0]);
+        return capturedOutput.toString(StandardCharsets.UTF_8);
     }
 }

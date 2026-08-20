@@ -2,32 +2,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-// Tests a task's name, checkbox, and completion state.
+/**
+ * Tests the display text and inherited completion state of concrete tasks.
+ */
 class TaskTest {
     @Test
-    void newTaskIsUnmarked() {
-        // A newly created task should start incomplete.
-        Task task = new Task("read book");
+    void todoStartsUnmarkedAndCanBeMarkedAndUnmarked() {
+        Task task = new Todo("read book");
 
-        assertEquals("[ ] read book", task.display());
+        assertEquals("[T][ ] read book", task.display());
+        assertEquals("[T][X] read book", task.mark());
+        assertEquals("[T][ ] read book", task.unmark());
     }
 
     @Test
-    void markReturnsMarkedTask() {
-        Task task = new Task("read book");
+    void deadlineDisplaysDeadlineText() {
+        Task task = new Deadline("return book", "Sunday");
 
-        // Marking changes the checkbox and returns the updated task text.
-        assertEquals("[X] read book", task.mark());
-        assertEquals("[X] read book", task.display());
+        assertEquals("[D][ ] return book (by: Sunday)", task.display());
     }
 
     @Test
-    void unmarkReturnsUnmarkedTask() {
-        Task task = new Task("read book");
-        task.mark();
+    void eventDisplaysStartAndEndText() {
+        Task task = new Event("project meeting", "Mon 2pm", "4pm");
 
-        // Unmarking restores the incomplete checkbox.
-        assertEquals("[ ] read book", task.unmark());
-        assertEquals("[ ] read book", task.display());
+        assertEquals("[E][ ] project meeting (from: Mon 2pm to: 4pm)", task.display());
     }
 }

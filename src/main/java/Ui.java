@@ -21,6 +21,9 @@ class Ui {
     void showTaskList(TaskList tasks) {
         System.out.println(DIVIDER);
         System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
+        if (tasks.size() == 0) {
+            System.out.println("\nYou have no tasks lined up king >0<");
+        }
         tasks.showTasks();
     }
 
