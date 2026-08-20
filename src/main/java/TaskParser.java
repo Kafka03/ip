@@ -1,15 +1,12 @@
 // Converts typed task commands into Todo, Deadline, and Event objects
 class TaskParser {
-    private static final String TODO_COMMAND = "todo";
-    private static final String DEADLINE_COMMAND = "deadline";
-    private static final String EVENT_COMMAND = "event";
     private static final String BY_MARKER = "/by";
     private static final String FROM_MARKER = "/from";
     private static final String TO_MARKER = "/to";
 
     // Parses a todo command and returns its task object.
     static Todo parseTodo(String input) throws ParserException {
-        String description = input.substring(TODO_COMMAND.length()).trim();
+        String description = input.substring(CommandType.TODO.keyword().length()).trim();
         if (description.isEmpty()) {
             throw new ParserException("toodaloo. todo needs to hv a description alpha");
         }
@@ -18,7 +15,7 @@ class TaskParser {
 
     // Parses a deadline command and separates its description and deadline.
     static Deadline parseDeadline(String input) throws ParserException {
-        String taskDetails = input.substring(DEADLINE_COMMAND.length()).trim();
+        String taskDetails = input.substring(CommandType.DEADLINE.keyword().length()).trim();
         int byMarkerPosition = taskDetails.indexOf(BY_MARKER);
         String description = byMarkerPosition < 0
                 ? taskDetails
@@ -40,7 +37,7 @@ class TaskParser {
 
     // Parses an event command and separates its description, start, and end.
     static Event parseEvent(String input) throws ParserException {
-        String taskDetails = input.substring(EVENT_COMMAND.length()).trim();
+        String taskDetails = input.substring(CommandType.EVENT.keyword().length()).trim();
         int fromMarkerPosition = taskDetails.indexOf(FROM_MARKER);
         int toMarkerPosition = taskDetails.indexOf(TO_MARKER);
         int descriptionEnd = taskDetails.length();
