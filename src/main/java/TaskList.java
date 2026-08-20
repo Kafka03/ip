@@ -14,6 +14,11 @@ class TaskList {
         taskList.add(task);
     }
 
+    // Deletes the numbered task and returns the removed task
+    Task deleteTask(int taskNumber) {
+        return taskList.remove(taskNumber - 1);
+    }
+
     // Returns the number of tasks currently stored in this list
     int size() {
         return taskList.size();
