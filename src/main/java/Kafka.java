@@ -22,11 +22,12 @@ public class Kafka {
 
         while (true) {
             String input = ui.readCommand();
-            if (input.equals("bye")) {
+            CommandType command = CommandType.fromInput(input);
+            if (command == CommandType.BYE) {
                 break;
             }
             try {
-                processCommand(input);
+                processCommand(command, input);
             } catch (KafkaException exception) {
                 ui.showError(exception.getMessage());
             }
@@ -37,23 +38,16 @@ public class Kafka {
     }
 
     // Sends each command to the method responsible for handling it.
-    private void processCommand(String input) throws KafkaException {
-        if (input.equals("list")) {
-            showList();
-        } else if (input.equals("todo") || input.startsWith("todo ")) {
-            addTodo(input);
-        } else if (input.equals("deadline") || input.startsWith("deadline ")) {
-            addDeadline(input);
-        } else if (input.equals("event") || input.startsWith("event ")) {
-            addEvent(input);
-        } else if (input.equals("mark") || input.startsWith("mark ")) {
-            markTask(input);
-        } else if (input.equals("unmark") || input.startsWith("unmark ")) {
-            unmarkTask(input);
-        } else if (input.equals("delete") || input.startsWith("delete ")) {
-            deleteTask(input);
-        } else {
-            showUnknownCommand();
+    private void processCommand(CommandType command, String input) throws KafkaException {
+        switch (command) {
+        case LIST -> showList();
+        case TODO -> addTodo(input);
+        case DEADLINE -> addDeadline(input);
+        case EVENT -> addEvent(input);
+        case MARK -> markTask(input);
+        case UNMARK -> unmarkTask(input);
+        case DELETE -> deleteTask(input);
+        case UNKNOWN, BYE -> showUnknownCommand();
         }
     }
 
@@ -85,21 +79,21 @@ public class Kafka {
 
     // Marks the task number supplied by the user.
     private void markTask(String input) throws KafkaException {
-        int taskNumber = TaskParser.parseTaskNumber(input, "mark");
+        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.keyword());
         String markedTask = tasks.markTask(taskNumber);
         ui.showTaskMarked(markedTask);
     }
 
     // Unmarks the task number supplied by the user.
     private void unmarkTask(String input) throws KafkaException {
-        int taskNumber = TaskParser.parseTaskNumber(input, "unmark");
+        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.keyword());
         String unmarkedTask = tasks.unmarkTask(taskNumber);
         ui.showTaskUnmarked(unmarkedTask);
     }
 
     // Deletes the task number supplied by the user.
     private void deleteTask(String input) throws ParserException {
-        int taskNumber = TaskParser.parseTaskNumber(input, "delete");
+        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.DELETE.keyword());
         Task deletedTask = tasks.deleteTask(taskNumber);
         ui.showTaskDeleted(deletedTask, tasks.size());
     }
