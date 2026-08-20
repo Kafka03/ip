@@ -29,7 +29,9 @@ class Ui {
         System.out.println(DIVIDER);
         System.out.println("Yippee!!! I've added this task:");
         System.out.println("  " + task.display());
-        System.out.println("Now you have " + taskCount + " tasks in the list. What a legend.");
+        String taskWord = taskCount == 1 ? "task" : "tasks";
+        System.out.println("Now you have " + taskCount + " " + taskWord
+                + " in the list. What a legend.");
         System.out.println(DIVIDER);
     }
 
