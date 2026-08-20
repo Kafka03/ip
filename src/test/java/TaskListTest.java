@@ -1,4 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -7,17 +8,18 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
-// Tests storing, displaying, marking, and unmarking tasks in a task list.
+/**
+ * Tests storage, ordering, completion changes, and deletion in a task list.
+ */
 class TaskListTest {
     @Test
-    void showTasksDisplaysTasksInOrder() {
+    void showTasksDisplaysConcreteTasksInOrder() {
         TaskList tasks = new TaskList();
-        tasks.addTask("read book");
-        tasks.addTask("return book");
+        tasks.addTask(new Todo("read book"));
+        tasks.addTask(new Deadline("return book", "Sunday"));
         ByteArrayOutputStream capturedOutput = new ByteArrayOutputStream();
         PrintStream originalOutput = System.out;
 
-        // Capture the console output produced by showTasks().
         try {
             System.setOut(new PrintStream(capturedOutput, true, StandardCharsets.UTF_8));
             tasks.showTasks();
@@ -26,30 +28,45 @@ class TaskListTest {
         }
 
         String output = capturedOutput.toString(StandardCharsets.UTF_8);
-        int firstTaskPosition = output.indexOf("1.[ ] read book");
-        int secondTaskPosition = output.indexOf("2.[ ] return book");
+        int firstTaskPosition = output.indexOf("1.[T][ ] read book");
+        int secondTaskPosition = output.indexOf(
+                "2.[D][ ] return book (by: Sunday)");
         assertTrue(firstTaskPosition >= 0, "The first task should be displayed");
         assertTrue(secondTaskPosition > firstTaskPosition,
-                "The second task should be displayed after the first task");
+                "The second task should follow the first task");
     }
 
     @Test
-    void markTaskMarksSelectedTask() {
+    void markAndUnmarkChangeSelectedTask() throws KafkaException {
         TaskList tasks = new TaskList();
-        tasks.addTask("read book");
-        tasks.addTask("return book");
+        tasks.addTask(new Todo("read book"));
+        tasks.addTask(new Todo("return book"));
 
-        // Task numbers are one-based, so task 2 should be the second task.
-        assertEquals("[X] return book", tasks.markTask(2));
+        assertEquals("[T][X] return book", tasks.markTask(2));
+        assertEquals("[T][ ] return book", tasks.unmarkTask(2));
     }
 
     @Test
-    void unmarkTaskUnmarksSelectedTask() {
+    void unavailableTaskNumberDoesNotChangeExistingTask() {
         TaskList tasks = new TaskList();
-        tasks.addTask("read book");
-        tasks.markTask(1);
+        Task task = new Todo("read book");
+        tasks.addTask(task);
 
-        // The returned text should contain the restored unchecked state.
-        assertEquals("[ ] read book", tasks.unmarkTask(1));
+        assertThrows(KafkaException.class, () -> tasks.markTask(2));
+        assertEquals("[T][ ] read book", task.display());
+    }
+
+    @Test
+    void deleteTaskReturnsRemovedTaskAndShiftsRemainingTasks() throws KafkaException {
+        TaskList tasks = new TaskList();
+        tasks.addTask(new Todo("first"));
+        tasks.addTask(new Deadline("second", "Sunday"));
+        tasks.addTask(new Event("third", "Monday", "Tuesday"));
+
+        Task deletedTask = tasks.deleteTask(2);
+
+        assertEquals("[D][ ] second (by: Sunday)", deletedTask.display());
+        assertEquals(2, tasks.size());
+        assertEquals("[E][X] third (from: Monday to: Tuesday)", tasks.markTask(2));
     }
 }
