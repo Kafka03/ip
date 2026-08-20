@@ -25,7 +25,11 @@ public class Kafka {
             if (input.equals("bye")) {
                 break;
             }
-            processCommand(input);
+            try {
+                processCommand(input);
+            } catch (KafkaException exception) {
+                ui.showError(exception.getMessage());
+            }
         }
 
         ui.sayBye();
@@ -33,18 +37,18 @@ public class Kafka {
     }
 
     // Sends each command to the method responsible for handling it.
-    private void processCommand(String input) {
+    private void processCommand(String input) throws KafkaException {
         if (input.equals("list")) {
             showList();
-        } else if (input.startsWith("todo ")) {
+        } else if (input.equals("todo") || input.startsWith("todo ")) {
             addTodo(input);
-        } else if (input.startsWith("deadline ")) {
+        } else if (input.equals("deadline") || input.startsWith("deadline ")) {
             addDeadline(input);
-        } else if (input.startsWith("event ")) {
+        } else if (input.equals("event") || input.startsWith("event ")) {
             addEvent(input);
-        } else if (input.startsWith("mark ")) {
+        } else if (input.equals("mark") || input.startsWith("mark ")) {
             markTask(input);
-        } else if (input.startsWith("unmark ")) {
+        } else if (input.equals("unmark") || input.startsWith("unmark ")) {
             unmarkTask(input);
         } else {
             showUnknownCommand();
@@ -57,17 +61,17 @@ public class Kafka {
     }
 
     // Parses and adds a todo.
-    private void addTodo(String input) {
+    private void addTodo(String input) throws ParserException {
         addAndShow(TaskParser.parseTodo(input));
     }
 
     // Parses and adds a deadline.
-    private void addDeadline(String input) {
+    private void addDeadline(String input) throws ParserException {
         addAndShow(TaskParser.parseDeadline(input));
     }
 
     // Parses and adds an event.
-    private void addEvent(String input) {
+    private void addEvent(String input) throws ParserException {
         addAndShow(TaskParser.parseEvent(input));
     }
 
@@ -78,15 +82,15 @@ public class Kafka {
     }
 
     // Marks the task number supplied by the user.
-    private void markTask(String input) {
-        int taskNumber = Integer.parseInt(input.substring("mark ".length()));
+    private void markTask(String input) throws KafkaException {
+        int taskNumber = TaskParser.parseTaskNumber(input, "mark");
         String markedTask = tasks.markTask(taskNumber);
         ui.showTaskMarked(markedTask);
     }
 
     // Unmarks the task number supplied by the user.
-    private void unmarkTask(String input) {
-        int taskNumber = Integer.parseInt(input.substring("unmark ".length()));
+    private void unmarkTask(String input) throws KafkaException {
+        int taskNumber = TaskParser.parseTaskNumber(input, "unmark");
         String unmarkedTask = tasks.unmarkTask(taskNumber);
         ui.showTaskUnmarked(unmarkedTask);
     }
