@@ -51,10 +51,20 @@ class Ui {
         System.out.println(DIVIDER);
     }
 
+    // Confirms that a task was deleted and displays the new task count.
+    void showTaskDeleted(Task task, int taskCount) {
+        System.out.println(DIVIDER);
+        System.out.println("Aight. I've yeeted this task:");
+        System.out.println("  " + task.display());
+        String taskWord = taskCount == 1 ? "task" : "tasks";
+        System.out.println("Now you have " + taskCount + " " + taskWord + " in the list.");
+        System.out.println(DIVIDER);
+    }
+
     // Explains that unrecognized input cannot be added as a task.
     void showUnknownCommand() {
         System.out.println(DIVIDER);
-        System.out.println("Sowwy I don't know that command... pwease try todo, deadline, event, list, mark, unmark, or bye.");
+        System.out.println("Sowwy I don't know that command... pwease try todo, deadline, event, list, mark, unmark, delete, or bye.");
         System.out.println(DIVIDER);
     }
 

@@ -71,7 +71,7 @@ class TaskParser {
         return new Event(description, from, to);
     }
 
-    // Parses a positive task number from a mark or unmark command.
+    // Parses a positive task number from a mark, unmark, or delete command.
     static int parseTaskNumber(String input, String command) throws ParserException {
         String numberText = input.substring(command.length()).trim();
         try {
@@ -81,7 +81,7 @@ class TaskParser {
             }
             return taskNumber;
         } catch (NumberFormatException exception) {
-            throw new ParserException("please gimme a whole numberrr");
+            throw new ParserException("please gimme just a whole numberrr");
         }
     }
 }

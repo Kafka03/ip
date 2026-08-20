@@ -50,6 +50,8 @@ public class Kafka {
             markTask(input);
         } else if (input.equals("unmark") || input.startsWith("unmark ")) {
             unmarkTask(input);
+        } else if (input.equals("delete") || input.startsWith("delete ")) {
+            deleteTask(input);
         } else {
             showUnknownCommand();
         }
@@ -93,6 +95,13 @@ public class Kafka {
         int taskNumber = TaskParser.parseTaskNumber(input, "unmark");
         String unmarkedTask = tasks.unmarkTask(taskNumber);
         ui.showTaskUnmarked(unmarkedTask);
+    }
+
+    // Deletes the task number supplied by the user.
+    private void deleteTask(String input) throws ParserException {
+        int taskNumber = TaskParser.parseTaskNumber(input, "delete");
+        Task deletedTask = tasks.deleteTask(taskNumber);
+        ui.showTaskDeleted(deletedTask, tasks.size());
     }
 
     // Tells the user that their input was not a recognized command.
