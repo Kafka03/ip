@@ -20,13 +20,21 @@ class TaskList {
     }
 
     // Marks the numbered task and returns its updated display text
-    String markTask(int taskNumber) {
-        return taskList.get(taskNumber - 1).mark();
+    String markTask(int taskNumber) throws KafkaException {
+        return getTask(taskNumber).mark();
     }
 
     // Unmarks the numbered task and returns its updated display text
-    String unmarkTask(int taskNumber) {
-        return taskList.get(taskNumber - 1).unmark();
+    String unmarkTask(int taskNumber) throws KafkaException {
+        return getTask(taskNumber).unmark();
+    }
+
+    // Returns a numbered task or reports that the number is unavailable.
+    private Task getTask(int taskNumber) throws KafkaException {
+        if (taskNumber < 1 || taskNumber > taskList.size()) {
+            throw new KafkaException("Internal: There is no task with that number");
+        }
+        return taskList.get(taskNumber - 1);
     }
 
     void showTasks() {

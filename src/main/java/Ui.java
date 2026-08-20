@@ -1,8 +1,6 @@
 import java.util.Scanner;
 
-/**
- * Handles all console input and output for the Kafka chatbot.
- */
+// Handles console input and output for the Kafka chatbot.
 class Ui {
     private static final String DIVIDER = "____________________________________________________________";
     private static final String BANNER = "        /\\_/\\\n"
@@ -55,6 +53,13 @@ class Ui {
     void showUnknownCommand() {
         System.out.println(DIVIDER);
         System.out.println("Sowwy I don't know that command... pwease try todo, deadline, event, list, mark, unmark, or bye.");
+        System.out.println(DIVIDER);
+    }
+
+    // Displays an expected error without ending the chatbot session.
+    void showError(String message) {
+        System.out.println(DIVIDER);
+        System.out.println(message);
         System.out.println(DIVIDER);
     }
 
