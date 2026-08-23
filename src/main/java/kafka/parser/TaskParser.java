@@ -1,3 +1,5 @@
+package kafka.parser;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -9,8 +11,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-// Converts typed task commands into Todo, Deadline, and Event objects
-class TaskParser {
+import kafka.command.CommandType;
+import kafka.exception.ParserException;
+import kafka.task.Deadline;
+import kafka.task.Event;
+import kafka.task.Todo;
+
+/**
+ * Converts typed commands into tasks and task numbers.
+ */
+public final class TaskParser {
     private static final String BY_MARKER = "/by";
     private static final String FROM_MARKER = "/from";
     private static final String TO_MARKER = "/to";
@@ -34,7 +44,10 @@ class TaskParser {
             DateTimeFormatter.ofPattern("d MMM uuuu HHmm", Locale.ENGLISH);
 
     // Parses a todo command and returns its task object.
-    static Todo parseTodo(String input) throws ParserException {
+    private TaskParser() {
+    }
+
+    public static Todo parseTodo(String input) throws ParserException {
         String description = input.substring(CommandType.TODO.keyword().length()).trim();
         if (description.isEmpty()) {
             throw new ParserException("toodaloo. todo needs to hv a description alpha");
@@ -44,7 +57,7 @@ class TaskParser {
     }
 
     // Parses a deadline command and separates its description and deadline.
-    static Deadline parseDeadline(String input) throws ParserException {
+    public static Deadline parseDeadline(String input) throws ParserException {
         String taskDetails = input.substring(CommandType.DEADLINE.keyword().length()).trim();
         int byMarkerPosition = taskDetails.indexOf(BY_MARKER);
         String description = byMarkerPosition < 0
@@ -67,7 +80,7 @@ class TaskParser {
     }
 
     // Parses an event command and separates its description, start, and end.
-    static Event parseEvent(String input) throws ParserException {
+    public static Event parseEvent(String input) throws ParserException {
         String taskDetails = input.substring(CommandType.EVENT.keyword().length()).trim();
         int fromMarkerPosition = taskDetails.indexOf(FROM_MARKER);
         int toMarkerPosition = taskDetails.indexOf(TO_MARKER);
@@ -172,7 +185,7 @@ class TaskParser {
     }
 
     // Parses a positive task number from a mark, unmark, or delete command.
-    static int parseTaskNumber(String input, String command) throws ParserException {
+    public static int parseTaskNumber(String input, String command) throws ParserException {
         String numberText = input.substring(command.length()).trim();
         try {
             int taskNumber = Integer.parseInt(numberText);

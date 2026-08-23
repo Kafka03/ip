@@ -1,3 +1,14 @@
+package kafka;
+
+import kafka.command.CommandType;
+import kafka.exception.CorruptedTaskDataException;
+import kafka.exception.KafkaException;
+import kafka.parser.TaskParser;
+import kafka.storage.TaskStorage;
+import kafka.task.Task;
+import kafka.task.TaskList;
+import kafka.ui.Ui;
+
 /**
  * Runs the Kafka chatbot and coordinates commands between the UI, parser,
  * and task list.

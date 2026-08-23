@@ -1,29 +1,39 @@
+package kafka.storage;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import kafka.exception.CorruptedTaskDataException;
+import kafka.exception.KafkaException;
+import kafka.task.Deadline;
+import kafka.task.Event;
+import kafka.task.Task;
+import kafka.task.TaskList;
+import kafka.task.Todo;
+
 /**
  * Persists tasks so they can be restored between sessions.
  * Each line uses the format {@code type | status | task details}.
  */
-class TaskStorage {
+public class TaskStorage {
     private static final Path DEFAULT_PATH = Path.of("data", "kafka.txt");
 
     private final Path filePath;
 
-    TaskStorage() {
+    public TaskStorage() {
         this(DEFAULT_PATH);
     }
 
-    TaskStorage(Path filePath) {
+    public TaskStorage(Path filePath) {
         this.filePath = filePath;
     }
 
     /**
      * Returns the absolute location of the task data file for user guidance.
      */
-    Path getFilePath() {
+    public Path getFilePath() {
         return filePath.toAbsolutePath().normalize();
     }
 
@@ -34,7 +44,7 @@ class TaskStorage {
      * @return the tasks stored in the data file, or an empty list if it is absent
      * @throws KafkaException if the file cannot be read or contains malformed data
      */
-    TaskList load() throws KafkaException {
+    public TaskList load() throws KafkaException {
         TaskList tasks = new TaskList();
         if (Files.notExists(filePath)) {
             return tasks;
@@ -61,7 +71,7 @@ class TaskStorage {
      * @param tasks tasks to persist
      * @throws KafkaException if the directory or data file cannot be written
      */
-    void save(TaskList tasks) throws KafkaException {
+    public void save(TaskList tasks) throws KafkaException {
         try {
             Path parentDirectory = filePath.getParent();
             if (parentDirectory != null) {
