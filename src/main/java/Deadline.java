@@ -14,4 +14,9 @@ class Deadline extends Task {
     String display() {
         return "[D]" + super.display() + " (by: " + by + ")";
     }
+
+    @Override
+    String toDataString() {
+        return super.toDataString("D") + " | " + by;
+    }
 }

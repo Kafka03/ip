@@ -4,10 +4,20 @@
  */
 public class Kafka {
     private final Ui ui;
-    private final TaskList tasks;
+    private final TaskStorage taskStorage;
+    private TaskList tasks;
 
     Kafka() {
+        this(new TaskStorage());
+    }
+
+    /**
+     * Creates Kafka with a specified storage location, which also makes
+     * persistence testable without changing the user's real data file.
+     */
+    Kafka(TaskStorage taskStorage) {
         this.ui = new Ui();
+        this.taskStorage = taskStorage;
         this.tasks = new TaskList();
     }
 
@@ -17,8 +27,14 @@ public class Kafka {
     }
 
     // Reads and processes commands until the user exits.
-    private void run() {
+    void run() {
         ui.greet();
+
+        try {
+            tasks = taskStorage.load();
+        } catch (KafkaException exception) {
+            ui.showError(exception.getMessage());
+        }
 
         while (true) {
             String input = ui.readCommand();
@@ -57,23 +73,24 @@ public class Kafka {
     }
 
     // Parses and adds a todo.
-    private void addTodo(String input) throws ParserException {
+    private void addTodo(String input) throws KafkaException {
         addAndShow(TaskParser.parseTodo(input));
     }
 
     // Parses and adds a deadline.
-    private void addDeadline(String input) throws ParserException {
+    private void addDeadline(String input) throws KafkaException {
         addAndShow(TaskParser.parseDeadline(input));
     }
 
     // Parses and adds an event.
-    private void addEvent(String input) throws ParserException {
+    private void addEvent(String input) throws KafkaException {
         addAndShow(TaskParser.parseEvent(input));
     }
 
     // Stores a typed task and displays the result.
-    private void addAndShow(Task task) {
+    private void addAndShow(Task task) throws KafkaException {
         tasks.addTask(task);
+        taskStorage.save(tasks);
         ui.showTaskAdded(task, tasks.size());
     }
 
@@ -81,6 +98,7 @@ public class Kafka {
     private void markTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.keyword());
         String markedTask = tasks.markTask(taskNumber);
+        taskStorage.save(tasks);
         ui.showTaskMarked(markedTask);
     }
 
@@ -88,13 +106,15 @@ public class Kafka {
     private void unmarkTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.keyword());
         String unmarkedTask = tasks.unmarkTask(taskNumber);
+        taskStorage.save(tasks);
         ui.showTaskUnmarked(unmarkedTask);
     }
 
     // Deletes the task number supplied by the user.
-    private void deleteTask(String input) throws ParserException {
+    private void deleteTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.DELETE.keyword());
         Task deletedTask = tasks.deleteTask(taskNumber);
+        taskStorage.save(tasks);
         ui.showTaskDeleted(deletedTask, tasks.size());
     }
 

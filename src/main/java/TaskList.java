@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.List;
 
 // Stores and displays the tasks entered during a KafkaBot session
 class TaskList {
@@ -22,6 +23,11 @@ class TaskList {
     // Returns the number of tasks currently stored in this list
     int size() {
         return taskList.size();
+    }
+
+    // Returns a read-only snapshot of the tasks
+    List<Task> getTasks() {
+        return List.copyOf(taskList);
     }
 
     // Marks the numbered task and returns its updated display text
