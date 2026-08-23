@@ -4,9 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
@@ -33,7 +35,8 @@ class KafkaTest {
             "The event start or end cannot be empty my forbidden alpha~",
             "please gimme just a whole numberrr",
             "The task number must be at least 1 meow.",
-            "Internal: There is no task with that number");
+            "There is no task with that number",
+            "Task details cannot contain | sorryyy");
 
     @TempDir
     Path temporaryDirectory;
@@ -145,6 +148,32 @@ class KafkaTest {
         assertTrue(output.contains("1.[T][X] remember me"));
     }
 
+    @Test
+    void rejectingCorruptedFileOverwritePreservesFileAndShowsLocation() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Files.writeString(dataFile, "invalid saved task");
+
+        String output = runKafka("no\n");
+
+        assertEquals("invalid saved task", Files.readString(dataFile));
+        assertTrue(output.contains("Your task data was not changed."));
+        assertTrue(output.contains(dataFile.toAbsolutePath().toString()));
+        assertFalse(output.contains("Starting with an empty list."));
+    }
+
+    @Test
+    void approvingCorruptedFileOverwriteClearsFileAndContinues() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Files.writeString(dataFile, "invalid saved task");
+
+        String output = runKafka("yes\nlist\nbye\n");
+
+        assertEquals("", Files.readString(dataFile));
+        assertTrue(output.contains("Starting with an empty list."));
+        assertTrue(output.contains("You have no tasks lined up"));
+        assertTrue(output.contains("Bye babe~"));
+    }
+
     @ParameterizedTest
     @MethodSource("invalidInputsAndExpectedErrors")
     void invalidInputShowsOnlyItsMatchingError(String invalidInput, String expectedError) {
@@ -172,7 +201,8 @@ class KafkaTest {
                 Arguments.of("event meeting /from /to 3pm", INPUT_ERROR_MESSAGES.get(6)),
                 Arguments.of("mark abc", INPUT_ERROR_MESSAGES.get(7)),
                 Arguments.of("mark 0", INPUT_ERROR_MESSAGES.get(8)),
-                Arguments.of("mark 1", INPUT_ERROR_MESSAGES.get(9)));
+                Arguments.of("mark 1", INPUT_ERROR_MESSAGES.get(9)),
+                Arguments.of("todo compare A | B", INPUT_ERROR_MESSAGES.get(10)));
     }
 
     private static int countOccurrences(String text, String value) {

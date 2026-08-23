@@ -30,10 +30,9 @@ public class Kafka {
     void run() {
         ui.greet();
 
-        try {
-            tasks = taskStorage.load();
-        } catch (KafkaException exception) {
-            ui.showError(exception.getMessage());
+        if (!loadTasks()) {
+            ui.close();
+            return;
         }
 
         while (true) {
@@ -51,6 +50,38 @@ public class Kafka {
 
         ui.sayBye();
         ui.close();
+    }
+
+    /**
+     * Loads stored tasks and safely handles a corrupted or unreadable file.
+     *
+     * @return whether Kafka can proceed to its command loop
+     */
+    private boolean loadTasks() {
+        try {
+            tasks = taskStorage.load();
+            return true;
+        } catch (CorruptedTaskDataException exception) {
+            ui.showError(exception.getMessage());
+            if (!ui.confirmStorageOverwrite(taskStorage.getFilePath())) {
+                ui.showStorageFileLocation(taskStorage.getFilePath());
+                return false;
+            }
+
+            try {
+                taskStorage.save(tasks);
+                ui.showStorageOverwritten();
+                return true;
+            } catch (KafkaException saveException) {
+                ui.showError(saveException.getMessage());
+                ui.showStorageFileLocation(taskStorage.getFilePath());
+                return false;
+            }
+        } catch (KafkaException exception) {
+            ui.showError(exception.getMessage());
+            ui.showStorageFileLocation(taskStorage.getFilePath());
+            return false;
+        }
     }
 
     // Sends each command to the method responsible for handling it.

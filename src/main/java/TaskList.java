@@ -16,7 +16,10 @@ class TaskList {
     }
 
     // Deletes the numbered task and returns the removed task
-    Task deleteTask(int taskNumber) {
+    Task deleteTask(int taskNumber) throws KafkaException {
+        if (taskNumber < 1 || taskNumber > taskList.size()) {
+            throw new KafkaException("There is no task with that number");
+        }
         return taskList.remove(taskNumber - 1);
     }
 
@@ -43,7 +46,7 @@ class TaskList {
     // Returns a numbered task or reports that the number is unavailable.
     private Task getTask(int taskNumber) throws KafkaException {
         if (taskNumber < 1 || taskNumber > taskList.size()) {
-            throw new KafkaException("Internal: There is no task with that number");
+            throw new KafkaException("There is no task with that number");
         }
         return taskList.get(taskNumber - 1);
     }

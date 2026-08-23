@@ -14,6 +14,8 @@ class TaskParser {
     private static final String BY_MARKER = "/by";
     private static final String FROM_MARKER = "/from";
     private static final String TO_MARKER = "/to";
+    private static final String STORAGE_DELIMITER_ERROR =
+            "Task details cannot contain | sorryyy";
     private static final List<String> DATE_PATTERNS = List.of(
             "uuuu-MM-dd", "d/M/uuuu", "d MMM uuuu");
     private static final List<String> TIME_PATTERNS = List.of(
@@ -37,6 +39,7 @@ class TaskParser {
         if (description.isEmpty()) {
             throw new ParserException("toodaloo. todo needs to hv a description alpha");
         }
+        rejectStorageDelimiter(description);
         return new Todo(description);
     }
 
@@ -59,6 +62,7 @@ class TaskParser {
         if (by.isEmpty()) {
             throw new ParserException("The deadline date or time cannot be empty alpha.");
         }
+        rejectStorageDelimiter(description, by);
         return new Deadline(description, normalizeDateTime(by));
     }
 
@@ -85,14 +89,25 @@ class TaskParser {
                 || fromMarkerPosition >= toMarkerPosition) {
             throw new ParserException("An event must include /from followed by /to. Do you hate me?");
         }
-
         String from = taskDetails.substring(fromMarkerPosition + FROM_MARKER.length(),
                 toMarkerPosition).trim();
         String to = taskDetails.substring(toMarkerPosition + TO_MARKER.length()).trim();
         if (from.isEmpty() || to.isEmpty()) {
             throw new ParserException("The event start or end cannot be empty my forbidden alpha~");
         }
+        rejectStorageDelimiter(description, from, to);
         return new Event(description, normalizeDateTime(from), normalizeDateTime(to));
+    }
+
+    /**
+     * Rejects the pipe reserved as the separator in the task storage format.
+     */
+    private static void rejectStorageDelimiter(String... values) throws ParserException {
+        for (String value : values) {
+            if (value.contains("|")) {
+                throw new ParserException(STORAGE_DELIMITER_ERROR);
+            }
+        }
     }
 
     /**
