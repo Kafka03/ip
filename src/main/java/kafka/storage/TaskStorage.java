@@ -1,6 +1,7 @@
 package kafka.storage;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -20,6 +21,11 @@ import kafka.task.Todo;
 public class TaskStorage {
     /** Default save-file location relative to the project directory. */
     private static final Path DEFAULT_PATH = Path.of("data", "kafka.txt");
+    private static final String TODO_TYPE = "T";
+    private static final String DEADLINE_TYPE = "D";
+    private static final String EVENT_TYPE = "E";
+    private static final String DONE_STATUS = "1";
+    private static final String NOT_DONE_STATUS = "0";
 
     private final Path filePath;
 
@@ -63,7 +69,7 @@ public class TaskStorage {
         }
 
         try {
-            List<String> lines = Files.readAllLines(filePath);
+            List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
             for (int i = 0; i < lines.size(); i++) {
                 String line = lines.get(i);
                 if (!line.isBlank()) {
@@ -93,7 +99,7 @@ public class TaskStorage {
             List<String> lines = tasks.getTasks().stream()
                     .map(Task::toDataString)
                     .toList();
-            Files.write(filePath, lines);
+            Files.write(filePath, lines, StandardCharsets.UTF_8);
         } catch (IOException exception) {
             throw new KafkaException("Could not save tasks to " + filePath, exception);
         }
@@ -122,16 +128,16 @@ public class TaskStorage {
         }
 
         switch (type) {
-        case "T" -> {
+        case TODO_TYPE -> {
             requireFieldCount(fields, 3, lineNumber);
             task = new Todo(fields[2]);
         }
-        case "D" -> {
+        case DEADLINE_TYPE -> {
             requireFieldCount(fields, 4, lineNumber);
             requireNonBlank(fields[3], lineNumber);
             task = new Deadline(fields[2], fields[3]);
         }
-        case "E" -> {
+        case EVENT_TYPE -> {
             requireFieldCount(fields, 5, lineNumber);
             requireNonBlank(fields[3], lineNumber);
             requireNonBlank(fields[4], lineNumber);
@@ -140,9 +146,9 @@ public class TaskStorage {
         default -> throw malformedLine(lineNumber);
         }
 
-        if (status.equals("1")) {
+        if (status.equals(DONE_STATUS)) {
             task.mark();
-        } else if (!status.equals("0")) {
+        } else if (!status.equals(NOT_DONE_STATUS)) {
             throw malformedLine(lineNumber);
         }
         return task;
