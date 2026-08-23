@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests conversion of user input into command types.
+ * Checks that Kafka identifies commands correctly and rejects impostors.
  */
 class CommandTypeTest {
     @Test

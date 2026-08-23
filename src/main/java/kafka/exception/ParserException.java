@@ -1,9 +1,14 @@
 package kafka.exception;
 
 /**
- * Represents an error caused by incomplete or malformed command input.
+ * Reports command input that Kafka cannot parse yet, bestie.
  */
 public class ParserException extends KafkaException {
+    /**
+     * Creates a parser error with guidance for the user.
+     *
+     * @param message explanation of what was wrong with the command
+     */
     public ParserException(String message) {
         super(message);
     }
