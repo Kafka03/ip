@@ -10,7 +10,10 @@ import kafka.task.TaskList;
  * Handles every console conversation so Kafka's other classes can stay focused.
  */
 public class Ui {
-    private static final String DIVIDER = "____________________________________________________________";
+    private static final String DIVIDER = "_".repeat(60);
+    private static final String UNKNOWN_COMMAND_MESSAGE =
+            "Sowwy I don't know that command... pwease try todo, deadline, event, "
+            + "list, mark, unmark, delete, or bye.";
     private static final String BANNER = "        /\\_/\\\n"
             + "       ( o.o )     K A F K A\n"
             + "        > 0 <        \n";
@@ -40,7 +43,7 @@ public class Ui {
     public void showTaskList(TaskList tasks) {
         System.out.println(DIVIDER);
         System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
-        if (tasks.size() == 0) {
+        if (tasks.isEmpty()) {
             System.out.println("\nYou have no tasks lined up king >0<");
         }
         tasks.showTasks();
@@ -106,7 +109,7 @@ public class Ui {
      */
     public void showUnknownCommand() {
         System.out.println(DIVIDER);
-        System.out.println("Sowwy I don't know that command... pwease try todo, deadline, event, list, mark, unmark, delete, or bye.");
+        System.out.println(UNKNOWN_COMMAND_MESSAGE);
         System.out.println(DIVIDER);
     }
 

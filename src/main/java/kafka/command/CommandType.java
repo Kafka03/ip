@@ -53,9 +53,10 @@ public enum CommandType {
             if (command == UNKNOWN) {
                 continue;
             }
-            if (input.equals(command.keyword)
-                    || command.acceptsArguments
-                    && input.startsWith(command.keyword + " ")) {
+            boolean matchesKeyword = input.equals(command.keyword);
+            boolean matchesCommandWithArguments = command.acceptsArguments
+                    && input.startsWith(command.keyword + " ");
+            if (matchesKeyword || matchesCommandWithArguments) {
                 return command;
             }
         }
