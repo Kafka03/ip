@@ -16,6 +16,8 @@ public enum CommandType {
     UNMARK("unmark", true),
     /** Removes a numbered task from the list. */
     DELETE("delete", true),
+    /** Finds tasks containing a supplied keyword. */
+    FIND("find", true),
     /** Displays the full task squad in order. */
     LIST("list", false),
     /** Ends the current Kafka session. */
