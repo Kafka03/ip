@@ -8,4 +8,9 @@ class Todo extends Task {
     String display() {
         return "[T]" + super.display();
     }
+
+    @Override
+    String toDataString() {
+        return super.toDataString("T");
+    }
 }
