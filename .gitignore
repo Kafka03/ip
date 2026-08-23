@@ -21,3 +21,12 @@ text-ui-test/EXPECTED-UNIX.TXT
 
 # Class files
 *.class
+
+# VS Code settings
+/.vscode/
+
+# Runtime task data
+/data/
+
+# jar files
+*.jar

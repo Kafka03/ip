@@ -9,8 +9,8 @@ import kafka.exception.KafkaException;
  * Keeps the user's task squad together in its current order.
  */
 public class TaskList {
-    private static final String DIVIDER = "____________________________________________________________";
-    private final ArrayList<Task> taskList;
+    private static final String DIVIDER = "_".repeat(60);
+    private final List<Task> taskList;
 
     /**
      * Creates an empty task list, ready for the grind.
@@ -36,10 +36,7 @@ public class TaskList {
      * @throws KafkaException if no task has that number
      */
     public Task deleteTask(int taskNumber) throws KafkaException {
-        if (taskNumber < 1 || taskNumber > taskList.size()) {
-            throw new KafkaException("There is no task with that number");
-        }
-        return taskList.remove(taskNumber - 1);
+        return taskList.remove(getTaskIndex(taskNumber));
     }
 
     /**
@@ -49,6 +46,15 @@ public class TaskList {
      */
     public int size() {
         return taskList.size();
+    }
+
+    /**
+     * Reports whether the list has no tasks waiting in it.
+     *
+     * @return {@code true} when the list contains no tasks
+     */
+    public boolean isEmpty() {
+        return taskList.isEmpty();
     }
 
     /**
@@ -90,10 +96,21 @@ public class TaskList {
      * @throws KafkaException if no task has that number
      */
     private Task getTask(int taskNumber) throws KafkaException {
+        return taskList.get(getTaskIndex(taskNumber));
+    }
+
+    /**
+     * Validates a user-facing task number and converts it to a zero-based index.
+     *
+     * @param taskNumber one-based number supplied by the user
+     * @return matching zero-based list index
+     * @throws KafkaException if no task has that number
+     */
+    private int getTaskIndex(int taskNumber) throws KafkaException {
         if (taskNumber < 1 || taskNumber > taskList.size()) {
             throw new KafkaException("There is no task with that number");
         }
-        return taskList.get(taskNumber - 1);
+        return taskNumber - 1;
     }
 
     /**

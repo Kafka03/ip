@@ -27,6 +27,11 @@ public final class TaskParser {
     private static final String TO_MARKER = "/to";
     private static final String STORAGE_DELIMITER_ERROR =
             "Task details cannot contain | sorryyy";
+    private static final String EMPTY_EVENT_DESCRIPTION_ERROR =
+            "are u event-ing new ways to tease me? "
+            + "The event description cannot be empty.";
+    private static final String INVALID_EVENT_MARKERS_ERROR =
+            "An event must include /from followed by /to. Do you hate me?";
     /** Accepted date patterns, ordered from machine-friendly to human-friendly. */
     private static final List<String> DATE_PATTERNS = List.of(
             "uuuu-MM-dd", "d/M/uuuu", "d MMM uuuu");
@@ -110,7 +115,7 @@ public final class TaskParser {
         int toMarkerPosition = taskDetails.indexOf(TO_MARKER);
         int descriptionEnd = taskDetails.length();
 
-        // end the code at whichever valid marker appears first
+        // End the description at whichever valid marker appears first.
         if (fromMarkerPosition >= 0) {
             descriptionEnd = Math.min(descriptionEnd, fromMarkerPosition);
         }
@@ -120,11 +125,11 @@ public final class TaskParser {
 
         String description = taskDetails.substring(0, descriptionEnd).trim();
         if (description.isEmpty()) {
-            throw new ParserException("are u event-ing new ways to tease me? The event description cannot be empty.");
+            throw new ParserException(EMPTY_EVENT_DESCRIPTION_ERROR);
         }
         if (fromMarkerPosition < 0 || toMarkerPosition < 0
                 || fromMarkerPosition >= toMarkerPosition) {
-            throw new ParserException("An event must include /from followed by /to. Do you hate me?");
+            throw new ParserException(INVALID_EVENT_MARKERS_ERROR);
         }
         String from = taskDetails.substring(fromMarkerPosition + FROM_MARKER.length(),
                 toMarkerPosition).trim();
