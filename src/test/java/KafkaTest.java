@@ -6,15 +6,20 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Tests complete Kafka command sessions through console input and output.
  */
 class KafkaTest {
+    @TempDir
+    Path temporaryDirectory;
+
     private InputStream originalInput;
     private PrintStream originalOutput;
     private ByteArrayOutputStream capturedOutput;
@@ -113,9 +118,20 @@ class KafkaTest {
         assertFalse(output.contains("I've added this task"));
     }
 
+    @Test
+    void tasksPersistAcrossSessions() {
+        runKafka("todo remember me\nmark 1\nbye\n");
+
+        String output = runKafka("list\nbye\n");
+
+        assertTrue(output.contains("1.[T][X] remember me"));
+    }
+
     private String runKafka(String input) {
+        capturedOutput.reset();
         System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
-        Kafka.main(new String[0]);
+        TaskStorage taskStorage = new TaskStorage(temporaryDirectory.resolve("tasks.txt"));
+        new Kafka(taskStorage).run();
         return capturedOutput.toString(StandardCharsets.UTF_8);
     }
 }

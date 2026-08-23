@@ -25,4 +25,13 @@ abstract class Task {
         String status = isDone ? "[X]" : "[ ]";
         return status + " " + name;
     }
+
+    // Returns the fields shared by every task in the storage format
+    String toDataString(String taskType) {
+        String status = isDone ? "1" : "0";
+        return taskType + " | " + status + " | " + name;
+    }
+
+    // Converts this task into one line suitable for the task data file
+    abstract String toDataString();
 }

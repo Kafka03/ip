@@ -5,4 +5,8 @@ class KafkaException extends Exception {
     KafkaException(String message) {
         super(message);
     }
+
+    KafkaException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
