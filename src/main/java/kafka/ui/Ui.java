@@ -1,6 +1,7 @@
 package kafka.ui;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Scanner;
 
 import kafka.task.Task;
@@ -13,7 +14,7 @@ public class Ui {
     private static final String DIVIDER = "_".repeat(60);
     private static final String UNKNOWN_COMMAND_MESSAGE =
             "Sowwy I don't know that command... pwease try todo, deadline, event, "
-            + "list, mark, unmark, delete, or bye.";
+            + "list, find, mark, unmark, delete, or bye.";
     private static final String BANNER = "        /\\_/\\\n"
             + "       ( o.o )     K A F K A\n"
             + "        > 0 <        \n";
@@ -47,6 +48,20 @@ public class Ui {
             System.out.println("\nYou have no tasks lined up king >0<");
         }
         tasks.showTasks();
+    }
+
+    /**
+     * Displays tasks returned by a keyword search, numbered from one.
+     *
+     * @param matchingTasks tasks whose displayed text contains the keyword
+     */
+    public void showMatchingTasks(List<Task> matchingTasks) {
+        System.out.println(DIVIDER);
+        System.out.println("I worked hard to find the matching tasks in your list king:");
+        for (int i = 0; i < matchingTasks.size(); i++) {
+            System.out.println((i + 1) + "." + matchingTasks.get(i).display());
+        }
+        System.out.println(DIVIDER);
     }
 
     /**
