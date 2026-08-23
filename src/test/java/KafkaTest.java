@@ -1,3 +1,4 @@
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -6,15 +7,37 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests complete Kafka command sessions through console input and output.
  */
 class KafkaTest {
+    private static final List<String> INPUT_ERROR_MESSAGES = List.of(
+            "toodaloo. todo needs to hv a description alpha",
+            "im deaddd. The deadline description cannot be empty.",
+            "A deadline must include /by. Do you hate me?",
+            "The deadline date or time cannot be empty alpha.",
+            "are u event-ing new ways to tease me? The event description cannot be empty.",
+            "An event must include /from followed by /to. Do you hate me?",
+            "The event start or end cannot be empty my forbidden alpha~",
+            "please gimme just a whole numberrr",
+            "The task number must be at least 1 meow.",
+            "Internal: There is no task with that number");
+
+    @TempDir
+    Path temporaryDirectory;
+
     private InputStream originalInput;
     private PrintStream originalOutput;
     private ByteArrayOutputStream capturedOutput;
@@ -113,9 +136,60 @@ class KafkaTest {
         assertFalse(output.contains("I've added this task"));
     }
 
+    @Test
+    void tasksPersistAcrossSessions() {
+        runKafka("todo remember me\nmark 1\nbye\n");
+
+        String output = runKafka("list\nbye\n");
+
+        assertTrue(output.contains("1.[T][X] remember me"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidInputsAndExpectedErrors")
+    void invalidInputShowsOnlyItsMatchingError(String invalidInput, String expectedError) {
+        String output = runKafka(invalidInput + "\nbye\n");
+
+        assertEquals(1, countOccurrences(output, expectedError),
+                "The matching error should appear exactly once");
+        for (String otherError : INPUT_ERROR_MESSAGES) {
+            if (!otherError.equals(expectedError)) {
+                assertFalse(output.contains(otherError),
+                        "The output should not contain the unrelated error: " + otherError);
+            }
+        }
+        assertFalse(output.contains("I've added this task"));
+    }
+
+    private static Stream<Arguments> invalidInputsAndExpectedErrors() {
+        return Stream.of(
+                Arguments.of("todo", INPUT_ERROR_MESSAGES.get(0)),
+                Arguments.of("deadline /by Friday", INPUT_ERROR_MESSAGES.get(1)),
+                Arguments.of("deadline return book", INPUT_ERROR_MESSAGES.get(2)),
+                Arguments.of("deadline return book /by", INPUT_ERROR_MESSAGES.get(3)),
+                Arguments.of("event /from 2pm /to 3pm", INPUT_ERROR_MESSAGES.get(4)),
+                Arguments.of("event meeting /to 3pm", INPUT_ERROR_MESSAGES.get(5)),
+                Arguments.of("event meeting /from /to 3pm", INPUT_ERROR_MESSAGES.get(6)),
+                Arguments.of("mark abc", INPUT_ERROR_MESSAGES.get(7)),
+                Arguments.of("mark 0", INPUT_ERROR_MESSAGES.get(8)),
+                Arguments.of("mark 1", INPUT_ERROR_MESSAGES.get(9)));
+    }
+
+    private static int countOccurrences(String text, String value) {
+        int count = 0;
+        int position = 0;
+        while ((position = text.indexOf(value, position)) >= 0) {
+            count++;
+            position += value.length();
+        }
+        return count;
+    }
+
     private String runKafka(String input) {
+        capturedOutput.reset();
         System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
-        Kafka.main(new String[0]);
+        TaskStorage taskStorage = new TaskStorage(temporaryDirectory.resolve("tasks.txt"));
+        new Kafka(taskStorage).run();
         return capturedOutput.toString(StandardCharsets.UTF_8);
     }
 }
