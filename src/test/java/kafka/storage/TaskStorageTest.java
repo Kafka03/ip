@@ -26,7 +26,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests saving tasks and restoring them from the task data file.
+ * Checks that saved tasks survive the session break and corrupted records do not.
  */
 class TaskStorageTest {
     @TempDir
@@ -113,6 +113,11 @@ class TaskStorageTest {
                 exception.getMessage());
     }
 
+    /**
+     * Supplies malformed records that should all trigger the same safe failure path.
+     *
+     * @return invalid storage records for the parameterized loading test
+     */
     private static Stream<Arguments> invalidStorageRecords() {
         return Stream.of(
                 Arguments.of("X | 0 | unknown type"),

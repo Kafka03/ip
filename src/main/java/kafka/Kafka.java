@@ -10,14 +10,17 @@ import kafka.task.TaskList;
 import kafka.ui.Ui;
 
 /**
- * Runs the Kafka chatbot and coordinates commands between the UI, parser,
- * and task list.
+ * Runs the whole Kafka show by coordinating the UI, parser, storage, and task
+ * list without making any one of them do everything.
  */
 public class Kafka {
     private final Ui ui;
     private final TaskStorage taskStorage;
     private TaskList tasks;
 
+    /**
+     * Creates Kafka with its usual {@code data/kafka.txt} storage file.
+     */
     Kafka() {
         this(new TaskStorage());
     }
@@ -25,6 +28,8 @@ public class Kafka {
     /**
      * Creates Kafka with a specified storage location, which also makes
      * persistence testable without changing the user's real data file.
+     *
+     * @param taskStorage storage service Kafka should use for this session
      */
     Kafka(TaskStorage taskStorage) {
         this.ui = new Ui();
@@ -32,12 +37,18 @@ public class Kafka {
         this.tasks = new TaskList();
     }
 
-    // Starts a Kafka chatbot session.
+    /**
+     * Starts a fresh Kafka session, period.
+     *
+     * @param args command-line arguments; Kafka does not currently use them
+     */
     public static void main(String[] args) {
         new Kafka().run();
     }
 
-    // Reads and processes commands until the user exits.
+    /**
+     * Loads saved tasks and processes commands until the user says bye.
+     */
     void run() {
         ui.greet();
 
@@ -66,7 +77,7 @@ public class Kafka {
     /**
      * Loads stored tasks and safely handles a corrupted or unreadable file.
      *
-     * @return whether Kafka can proceed to its command loop
+     * @return {@code true} when Kafka can proceed to its command loop
      */
     private boolean loadTasks() {
         try {
@@ -95,7 +106,13 @@ public class Kafka {
         }
     }
 
-    // Sends each command to the method responsible for handling it.
+    /**
+     * Sends a recognized command to the method that knows its business.
+     *
+     * @param command recognized command type
+     * @param input complete input containing any command arguments
+     * @throws KafkaException if parsing, task handling, or saving fails
+     */
     private void processCommand(CommandType command, String input) throws KafkaException {
         switch (command) {
         case LIST -> showList();
@@ -109,34 +126,61 @@ public class Kafka {
         }
     }
 
-    // Displays all tasks in their current order.
+    /**
+     * Displays all tasks in their current order.
+     */
     private void showList() {
         ui.showTaskList(tasks);
     }
 
-    // Parses and adds a todo.
+    /**
+     * Parses and adds a todo.
+     *
+     * @param input complete todo command
+     * @throws KafkaException if parsing or saving fails
+     */
     private void addTodo(String input) throws KafkaException {
         addAndShow(TaskParser.parseTodo(input));
     }
 
-    // Parses and adds a deadline.
+    /**
+     * Parses and adds a deadline.
+     *
+     * @param input complete deadline command
+     * @throws KafkaException if parsing or saving fails
+     */
     private void addDeadline(String input) throws KafkaException {
         addAndShow(TaskParser.parseDeadline(input));
     }
 
-    // Parses and adds an event.
+    /**
+     * Parses and adds an event.
+     *
+     * @param input complete event command
+     * @throws KafkaException if parsing or saving fails
+     */
     private void addEvent(String input) throws KafkaException {
         addAndShow(TaskParser.parseEvent(input));
     }
 
-    // Stores a typed task and displays the result.
+    /**
+     * Adds a typed task, saves the whole list, and celebrates the result.
+     *
+     * @param task parsed task to add
+     * @throws KafkaException if the updated list cannot be saved
+     */
     private void addAndShow(Task task) throws KafkaException {
         tasks.addTask(task);
         taskStorage.save(tasks);
         ui.showTaskAdded(task, tasks.size());
     }
 
-    // Marks the task number supplied by the user.
+    /**
+     * Marks the task number supplied by the user.
+     *
+     * @param input complete mark command
+     * @throws KafkaException if the number is invalid or saving fails
+     */
     private void markTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.keyword());
         String markedTask = tasks.markTask(taskNumber);
@@ -144,7 +188,12 @@ public class Kafka {
         ui.showTaskMarked(markedTask);
     }
 
-    // Unmarks the task number supplied by the user.
+    /**
+     * Unmarks the task number supplied by the user—comebacks are allowed.
+     *
+     * @param input complete unmark command
+     * @throws KafkaException if the number is invalid or saving fails
+     */
     private void unmarkTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.keyword());
         String unmarkedTask = tasks.unmarkTask(taskNumber);
@@ -152,7 +201,12 @@ public class Kafka {
         ui.showTaskUnmarked(unmarkedTask);
     }
 
-    // Deletes the task number supplied by the user.
+    /**
+     * Deletes the task number supplied by the user.
+     *
+     * @param input complete delete command
+     * @throws KafkaException if the number is invalid or saving fails
+     */
     private void deleteTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.DELETE.keyword());
         Task deletedTask = tasks.deleteTask(taskNumber);
@@ -160,7 +214,9 @@ public class Kafka {
         ui.showTaskDeleted(deletedTask, tasks.size());
     }
 
-    // Tells the user that their input was not a recognized command.
+    /**
+     * Tells the user that Kafka did not recognize their command.
+     */
     private void showUnknownCommand() {
         ui.showUnknownCommand();
     }

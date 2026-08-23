@@ -1,17 +1,26 @@
 package kafka.command;
 
 /**
- * Represents the commands understood by the Kafka chatbot.
+ * Lists every command Kafka understands, plus {@link #UNKNOWN} for mystery input.
  */
 public enum CommandType {
+    /** Adds a task with no date or time attached. */
     TODO("todo", true),
+    /** Adds a task that needs to be done by a date or time. */
     DEADLINE("deadline", true),
+    /** Adds a task happening between start and end values. */
     EVENT("event", true),
+    /** Marks a numbered task as completed—slay. */
     MARK("mark", true),
+    /** Returns a numbered task to its unfinished era. */
     UNMARK("unmark", true),
+    /** Removes a numbered task from the list. */
     DELETE("delete", true),
+    /** Displays the full task squad in order. */
     LIST("list", false),
+    /** Ends the current Kafka session. */
     BYE("bye", false),
+    /** Represents input that matches none of Kafka's commands. */
     UNKNOWN("", false);
 
     private final String keyword;
@@ -22,14 +31,22 @@ public enum CommandType {
         this.acceptsArguments = acceptsArguments;
     }
 
-    //Returns the word users type to invoke this command.
+    /**
+     * Returns the keyword users type to summon this command.
+     *
+     * @return this command's lowercase keyword
+     */
     public String keyword() {
         return keyword;
     }
 
     /**
-     * Identifies a command while preserving the accepted input format: a
-     * keyword by itself or a keyword followed by a space and arguments.
+     * Identifies the command at the front of a user's input, meow.
+     * Argument-free commands must appear alone, while the others may be followed
+     * by a space and their details.
+     *
+     * @param input complete command entered by the user
+     * @return the matching command, or {@link #UNKNOWN} when nothing matches
      */
     public static CommandType fromInput(String input) {
         for (CommandType command : values()) {
