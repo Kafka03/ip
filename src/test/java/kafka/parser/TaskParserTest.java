@@ -1,6 +1,14 @@
+package kafka.parser;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import kafka.exception.ParserException;
+import kafka.task.Deadline;
+import kafka.task.Event;
+import kafka.task.Task;
+import kafka.task.Todo;
 
 import org.junit.jupiter.api.Test;
 

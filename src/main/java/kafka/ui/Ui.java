@@ -1,25 +1,32 @@
+package kafka.ui;
+
 import java.nio.file.Path;
 import java.util.Scanner;
 
-// Handles console input and output for the Kafka chatbot.
-class Ui {
+import kafka.task.Task;
+import kafka.task.TaskList;
+
+/**
+ * Handles console input and output for the Kafka chatbot.
+ */
+public class Ui {
     private static final String DIVIDER = "____________________________________________________________";
     private static final String BANNER = "        /\\_/\\\n"
             + "       ( o.o )     K A F K A\n"
             + "        > 0 <        \n";
     private final Scanner scanner;
 
-    Ui() {
+    public Ui() {
         this.scanner = new Scanner(System.in);
     }
 
     // Reads the user's next command.
-    String readCommand() {
+    public String readCommand() {
         return scanner.nextLine();
     }
 
     // Displays all tasks in the list.
-    void showTaskList(TaskList tasks) {
+    public void showTaskList(TaskList tasks) {
         System.out.println(DIVIDER);
         System.out.println("\u001B[4mHere's your to-dos, my fav hustler >////<\u001B[0m");
         if (tasks.size() == 0) {
@@ -29,7 +36,7 @@ class Ui {
     }
 
     // Confirms that a typed task was added and displays the new task count.
-    void showTaskAdded(Task task, int taskCount) {
+    public void showTaskAdded(Task task, int taskCount) {
         System.out.println(DIVIDER);
         System.out.println("Yippee!!! I've added this task:");
         System.out.println("  " + task.display());
@@ -40,7 +47,7 @@ class Ui {
     }
 
     // Confirms that a task was marked as done.
-    void showTaskMarked(String task) {
+    public void showTaskMarked(String task) {
         System.out.println(DIVIDER);
         System.out.println("Ur such a baddie!! I've marked this task as done:");
         System.out.println("  " + task);
@@ -48,7 +55,7 @@ class Ui {
     }
 
     // Confirms that a task was marked as not done.
-    void showTaskUnmarked(String task) {
+    public void showTaskUnmarked(String task) {
         System.out.println(DIVIDER);
         System.out.println("Awww issok my g, I've marked this task as not done yet:");
         System.out.println("  " + task);
@@ -56,7 +63,7 @@ class Ui {
     }
 
     // Confirms that a task was deleted and displays the new task count.
-    void showTaskDeleted(Task task, int taskCount) {
+    public void showTaskDeleted(Task task, int taskCount) {
         System.out.println(DIVIDER);
         System.out.println("Aight. I've yeeted this task:");
         System.out.println("  " + task.display());
@@ -66,14 +73,14 @@ class Ui {
     }
 
     // Explains that unrecognized input cannot be added as a task.
-    void showUnknownCommand() {
+    public void showUnknownCommand() {
         System.out.println(DIVIDER);
         System.out.println("Sowwy I don't know that command... pwease try todo, deadline, event, list, mark, unmark, delete, or bye.");
         System.out.println(DIVIDER);
     }
 
     // Displays an expected error without ending the chatbot session.
-    void showError(String message) {
+    public void showError(String message) {
         System.out.println(DIVIDER);
         System.out.println(message);
         System.out.println(DIVIDER);
@@ -82,7 +89,7 @@ class Ui {
     /**
      * Asks for explicit permission before replacing a corrupted task file.
      */
-    boolean confirmStorageOverwrite(Path filePath) {
+    public boolean confirmStorageOverwrite(Path filePath) {
         while (true) {
             System.out.println("The task data file may be corrupted:");
             System.out.println("  " + filePath);
@@ -105,7 +112,7 @@ class Ui {
     /**
      * Directs the user to the file that needs to be inspected or repaired.
      */
-    void showStorageFileLocation(Path filePath) {
+    public void showStorageFileLocation(Path filePath) {
         System.out.println("Your task data was not changed.");
         System.out.println("Please inspect or repair this file before restarting Kafka:");
         System.out.println("  " + filePath);
@@ -113,13 +120,13 @@ class Ui {
     }
 
     // Confirms that the user-approved corrupted file was replaced.
-    void showStorageOverwritten() {
+    public void showStorageOverwritten() {
         System.out.println("The corrupted task file was replaced. Starting with an empty list.");
         System.out.println(DIVIDER);
     }
 
     // Prints the chatbot banner and welcome message.
-    void greet() {
+    public void greet() {
         System.out.println(DIVIDER);
         System.out.print(BANNER);
         System.out.println("Heyy skinny legend! (⊃✿ ･ิω･ิ)⊃ I'm Kafka.");
@@ -128,13 +135,13 @@ class Ui {
     }
 
     // Prints the farewell message.
-    void sayBye() {
+    public void sayBye() {
         System.out.println("Bye babe~ Hope we bump into each other soon!");
         System.out.println(DIVIDER);
     }
 
     // Releases the scanner when the chatbot session ends.
-    void close() {
+    public void close() {
         scanner.close();
     }
 }

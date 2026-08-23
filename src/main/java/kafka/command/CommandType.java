@@ -1,6 +1,9 @@
-// Represents the commands understood by the Kafka chatbot.
+package kafka.command;
 
-enum CommandType {
+/**
+ * Represents the commands understood by the Kafka chatbot.
+ */
+public enum CommandType {
     TODO("todo", true),
     DEADLINE("deadline", true),
     EVENT("event", true),
@@ -20,7 +23,7 @@ enum CommandType {
     }
 
     //Returns the word users type to invoke this command.
-    String keyword() {
+    public String keyword() {
         return keyword;
     }
 
@@ -28,7 +31,7 @@ enum CommandType {
      * Identifies a command while preserving the accepted input format: a
      * keyword by itself or a keyword followed by a space and arguments.
      */
-    static CommandType fromInput(String input) {
+    public static CommandType fromInput(String input) {
         for (CommandType command : values()) {
             if (command == UNKNOWN) {
                 continue;
