@@ -2,6 +2,7 @@ package kafka.task;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import kafka.exception.KafkaException;
 
@@ -64,6 +65,21 @@ public class TaskList {
      */
     public List<Task> getTasks() {
         return List.copyOf(taskList);
+    }
+
+    /**
+     * Finds tasks whose displayed text contains the supplied keyword.
+     * Matching ignores letter case and preserves the tasks' original order.
+     *
+     * @param keyword text to search for
+     * @return immutable list of matching tasks in their original order
+     */
+    public List<Task> findTasks(String keyword) {
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        return taskList.stream()
+                .filter(task -> task.display().toLowerCase(Locale.ROOT)
+                        .contains(normalizedKeyword))
+                .toList();
     }
 
     /**

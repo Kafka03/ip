@@ -256,4 +256,19 @@ public final class TaskParser {
             throw new ParserException("please gimme just a whole numberrr");
         }
     }
+
+    /**
+     * Extracts the non-empty keyword from a find command.
+     *
+     * @param input complete find command entered by the user
+     * @return keyword to look for in the task list
+     * @throws ParserException if no keyword was supplied
+     */
+    public static String parseFindKeyword(String input) throws ParserException {
+        String keyword = input.substring(CommandType.FIND.keyword().length()).trim();
+        if (keyword.isEmpty()) {
+            throw new ParserException("Please provide a keyword to find.");
+        }
+        return keyword;
+    }
 }
