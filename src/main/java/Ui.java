@@ -1,3 +1,4 @@
+import java.nio.file.Path;
 import java.util.Scanner;
 
 // Handles console input and output for the Kafka chatbot.
@@ -75,6 +76,45 @@ class Ui {
     void showError(String message) {
         System.out.println(DIVIDER);
         System.out.println(message);
+        System.out.println(DIVIDER);
+    }
+
+    /**
+     * Asks for explicit permission before replacing a corrupted task file.
+     */
+    boolean confirmStorageOverwrite(Path filePath) {
+        while (true) {
+            System.out.println("The task data file may be corrupted:");
+            System.out.println("  " + filePath);
+            System.out.print("Overwrite it with an empty task list and continue? (yes/no): ");
+
+            if (!scanner.hasNextLine()) {
+                return false;
+            }
+            String response = scanner.nextLine().trim();
+            if (response.equalsIgnoreCase("yes") || response.equalsIgnoreCase("y")) {
+                return true;
+            }
+            if (response.equalsIgnoreCase("no") || response.equalsIgnoreCase("n")) {
+                return false;
+            }
+            System.out.println("Please enter yes or no.");
+        }
+    }
+
+    /**
+     * Directs the user to the file that needs to be inspected or repaired.
+     */
+    void showStorageFileLocation(Path filePath) {
+        System.out.println("Your task data was not changed.");
+        System.out.println("Please inspect or repair this file before restarting Kafka:");
+        System.out.println("  " + filePath);
+        System.out.println(DIVIDER);
+    }
+
+    // Confirms that the user-approved corrupted file was replaced.
+    void showStorageOverwritten() {
+        System.out.println("The corrupted task file was replaced. Starting with an empty list.");
         System.out.println(DIVIDER);
     }
 

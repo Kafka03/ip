@@ -22,6 +22,14 @@ class TaskParserTest {
     }
 
     @Test
+    void parseTodoRejectsStorageDelimiterInDescription() {
+        ParserException exception = assertThrows(ParserException.class,
+                () -> TaskParser.parseTodo("todo compare Java | Python"));
+
+        assertEquals("Task details cannot contain | sorryyy", exception.getMessage());
+    }
+
+    @Test
     void parseDeadlinePreservesDeadlineAsText() throws ParserException {
         Task task = TaskParser.parseDeadline("deadline do homework /by no idea :-p");
 
@@ -74,6 +82,17 @@ class TaskParserTest {
     }
 
     @Test
+    void parseDeadlineRejectsStorageDelimiterInEverySavedField() {
+        ParserException descriptionError = assertThrows(ParserException.class,
+                () -> TaskParser.parseDeadline("deadline compare A | B /by Friday"));
+        ParserException deadlineError = assertThrows(ParserException.class,
+                () -> TaskParser.parseDeadline("deadline submit report /by Fri | Sat"));
+
+        assertEquals("Task details cannot contain | sorryyy", descriptionError.getMessage());
+        assertEquals("Task details cannot contain | sorryyy", deadlineError.getMessage());
+    }
+
+    @Test
     void parseEventReturnsEvent() throws ParserException {
         Task task = TaskParser.parseEvent(
                 "event project meeting /from Mon 2pm /to 4pm");
@@ -104,6 +123,20 @@ class TaskParserTest {
                 () -> TaskParser.parseEvent("event project meeting /from /to 4pm"));
         assertThrows(ParserException.class,
                 () -> TaskParser.parseEvent("event project meeting /from 2pm /to"));
+    }
+
+    @Test
+    void parseEventRejectsStorageDelimiterInEverySavedField() {
+        ParserException descriptionError = assertThrows(ParserException.class,
+                () -> TaskParser.parseEvent("event compare A | B /from 2pm /to 3pm"));
+        ParserException startError = assertThrows(ParserException.class,
+                () -> TaskParser.parseEvent("event meeting /from Mon | Tue /to Wed"));
+        ParserException endError = assertThrows(ParserException.class,
+                () -> TaskParser.parseEvent("event meeting /from Mon /to Tue | Wed"));
+
+        assertEquals("Task details cannot contain | sorryyy", descriptionError.getMessage());
+        assertEquals("Task details cannot contain | sorryyy", startError.getMessage());
+        assertEquals("Task details cannot contain | sorryyy", endError.getMessage());
     }
 
     @Test

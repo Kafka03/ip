@@ -95,7 +95,8 @@ class TaskStorageTest {
         Path dataFile = temporaryDirectory.resolve("kafka.txt");
         Files.write(dataFile, List.of("T | 0 | valid task", invalidRecord));
 
-        KafkaException exception = assertThrows(KafkaException.class,
+        CorruptedTaskDataException exception = assertThrows(
+                CorruptedTaskDataException.class,
                 () -> new TaskStorage(dataFile).load());
 
         assertEquals("Malformed task data on line 2 of " + dataFile,

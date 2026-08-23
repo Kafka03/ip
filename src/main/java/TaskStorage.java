@@ -21,6 +21,13 @@ class TaskStorage {
     }
 
     /**
+     * Returns the absolute location of the task data file for user guidance.
+     */
+    Path getFilePath() {
+        return filePath.toAbsolutePath().normalize();
+    }
+
+    /**
      * Loads all valid task records in their saved order.
      * A missing file represents a user who has not saved any tasks yet.
      *
@@ -127,7 +134,8 @@ class TaskStorage {
         }
     }
 
-    private KafkaException malformedLine(int lineNumber) {
-        return new KafkaException("Malformed task data on line " + lineNumber + " of " + filePath);
+    private CorruptedTaskDataException malformedLine(int lineNumber) {
+        return new CorruptedTaskDataException(
+                "Malformed task data on line " + lineNumber + " of " + filePath);
     }
 }
