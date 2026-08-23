@@ -1,6 +1,6 @@
 /**
  * Represents a task that takes place between specified start and end times.
- * Both values are stored as entered ie strings rather than parsed as dates or times.
+ * Both values are stored as display-ready text.
  */
 class Event extends Task {
     private final String from;
