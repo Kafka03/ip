@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'com.gradleup.shadow' version '9.5.1'
 }
 
 repositories {
@@ -42,4 +43,8 @@ run {
 
 application {
     mainClass = 'kafka.Kafka'
+}
+
+shadowJar {
+    archiveFileName = 'kafka.jar'
 }
