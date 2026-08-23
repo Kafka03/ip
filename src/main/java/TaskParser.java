@@ -1,8 +1,35 @@
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 // Converts typed task commands into Todo, Deadline, and Event objects
 class TaskParser {
     private static final String BY_MARKER = "/by";
     private static final String FROM_MARKER = "/from";
     private static final String TO_MARKER = "/to";
+    private static final List<String> DATE_PATTERNS = List.of(
+            "uuuu-MM-dd", "d/M/uuuu", "d MMM uuuu");
+    private static final List<String> TIME_PATTERNS = List.of(
+            "HHmm", "H:mm", "h:mma", "ha");
+    private static final List<DateTimeFormatter> DATE_INPUT_FORMATTERS =
+            createFormatters(DATE_PATTERNS);
+    private static final List<DateTimeFormatter> TIME_INPUT_FORMATTERS =
+            createFormatters(TIME_PATTERNS);
+    private static final List<DateTimeFormatter> DATE_TIME_INPUT_FORMATTERS =
+            createDateTimeFormatters();
+    private static final DateTimeFormatter DATE_OUTPUT_FORMATTER =
+            DateTimeFormatter.ofPattern("d MMM uuuu", Locale.ENGLISH);
+    private static final DateTimeFormatter TIME_OUTPUT_FORMATTER =
+            DateTimeFormatter.ofPattern("HHmm", Locale.ENGLISH);
+    private static final DateTimeFormatter DATE_TIME_OUTPUT_FORMATTER =
+            DateTimeFormatter.ofPattern("d MMM uuuu HHmm", Locale.ENGLISH);
 
     // Parses a todo command and returns its task object.
     static Todo parseTodo(String input) throws ParserException {
@@ -32,7 +59,7 @@ class TaskParser {
         if (by.isEmpty()) {
             throw new ParserException("The deadline date or time cannot be empty alpha.");
         }
-        return new Deadline(description, by);
+        return new Deadline(description, normalizeDateTime(by));
     }
 
     // Parses an event command and separates its description, start, and end.
@@ -65,7 +92,68 @@ class TaskParser {
         if (from.isEmpty() || to.isEmpty()) {
             throw new ParserException("The event start or end cannot be empty my forbidden alpha~");
         }
-        return new Event(description, from, to);
+        return new Event(description, normalizeDateTime(from), normalizeDateTime(to));
+    }
+
+    /**
+     * Converts a recognized date, time, or date-time into the standard display
+     * format. Free-form text is preserved so values such as "Sunday" remain valid.
+     */
+    private static String normalizeDateTime(String value) {
+        String normalizedWhitespace = value.trim().replaceAll("\\s+", " ");
+
+        for (DateTimeFormatter formatter : DATE_TIME_INPUT_FORMATTERS) {
+            try {
+                LocalDateTime dateTime = LocalDateTime.parse(normalizedWhitespace, formatter);
+                return dateTime.format(DATE_TIME_OUTPUT_FORMATTER);
+            } catch (DateTimeParseException ignored) {
+                // Try the next supported date-time format.
+            }
+        }
+
+        for (DateTimeFormatter formatter : DATE_INPUT_FORMATTERS) {
+            try {
+                LocalDate date = LocalDate.parse(normalizedWhitespace, formatter);
+                return date.format(DATE_OUTPUT_FORMATTER);
+            } catch (DateTimeParseException ignored) {
+                // Try the next supported date format.
+            }
+        }
+
+        for (DateTimeFormatter formatter : TIME_INPUT_FORMATTERS) {
+            try {
+                LocalTime time = LocalTime.parse(normalizedWhitespace, formatter);
+                return time.format(TIME_OUTPUT_FORMATTER);
+            } catch (DateTimeParseException ignored) {
+                // Try the next supported time format.
+            }
+        }
+
+        return value;
+    }
+
+    private static List<DateTimeFormatter> createFormatters(List<String> patterns) {
+        return patterns.stream()
+                .map(TaskParser::createFormatter)
+                .toList();
+    }
+
+    private static List<DateTimeFormatter> createDateTimeFormatters() {
+        List<DateTimeFormatter> formatters = new ArrayList<>();
+        for (String datePattern : DATE_PATTERNS) {
+            for (String timePattern : TIME_PATTERNS) {
+                formatters.add(createFormatter(datePattern + " " + timePattern));
+            }
+        }
+        return List.copyOf(formatters);
+    }
+
+    private static DateTimeFormatter createFormatter(String pattern) {
+        return new DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .appendPattern(pattern)
+                .toFormatter(Locale.ENGLISH)
+                .withResolverStyle(ResolverStyle.STRICT);
     }
 
     // Parses a positive task number from a mark, unmark, or delete command.

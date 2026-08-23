@@ -1,6 +1,6 @@
 /**
  * Represents a task that must be completed by a specified date or time.
- * The deadline is stored as entered ie strings.
+ * The deadline is stored as display-ready text.
  */
 class Deadline extends Task {
     private final String by;
