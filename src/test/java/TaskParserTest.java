@@ -30,6 +30,38 @@ class TaskParserTest {
     }
 
     @Test
+    void parseDeadlineFormatsRecognizedDate() throws ParserException {
+        Task task = TaskParser.parseDeadline("deadline submit report /by 2020-01-18");
+
+        assertEquals("[D][ ] submit report (by: 18 Jan 2020)", task.display());
+    }
+
+    @Test
+    void parseDeadlineFormatsRecognizedTimeAsTwentyFourHourTime()
+            throws ParserException {
+        Task task = TaskParser.parseDeadline("deadline sleep /by 11:59pm");
+
+        assertEquals("[D][ ] sleep (by: 2359)", task.display());
+    }
+
+    @Test
+    void parseDeadlineFormatsRecognizedDateAndTime() throws ParserException {
+        Task task = TaskParser.parseDeadline(
+                "deadline celebrate /by 2020-01-18 11:59pm");
+
+        assertEquals("[D][ ] celebrate (by: 18 Jan 2020 2359)", task.display());
+    }
+
+    @Test
+    void parseDeadlineAcceptsSlashAndHumanReadableDates() throws ParserException {
+        Task slashDate = TaskParser.parseDeadline("deadline first /by 18/1/2020");
+        Task humanDate = TaskParser.parseDeadline("deadline second /by 18 jan 2020");
+
+        assertEquals("[D][ ] first (by: 18 Jan 2020)", slashDate.display());
+        assertEquals("[D][ ] second (by: 18 Jan 2020)", humanDate.display());
+    }
+
+    @Test
     void parseDeadlineRejectsMissingByMarker() {
         assertThrows(ParserException.class,
                 () -> TaskParser.parseDeadline("deadline return book"));
@@ -47,8 +79,17 @@ class TaskParserTest {
                 "event project meeting /from Mon 2pm /to 4pm");
 
         assertInstanceOf(Event.class, task);
-        assertEquals("[E][ ] project meeting (from: Mon 2pm to: 4pm)",
+        assertEquals("[E][ ] project meeting (from: Mon 2pm to: 1600)",
                 task.display());
+    }
+
+    @Test
+    void parseEventFormatsDateAndTimeAtBothEndpoints() throws ParserException {
+        Task task = TaskParser.parseEvent(
+                "event launch /from 2020-01-18 9am /to 2020-01-18 23:59");
+
+        assertEquals("[E][ ] launch (from: 18 Jan 2020 0900"
+                + " to: 18 Jan 2020 2359)", task.display());
     }
 
     @Test
