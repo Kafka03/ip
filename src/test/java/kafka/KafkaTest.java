@@ -26,7 +26,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests complete Kafka command sessions through console input and output.
+ * Runs full Kafka conversations so the whole squad proves it can work together.
  */
 class KafkaTest {
     private static final List<String> INPUT_ERROR_MESSAGES = List.of(
@@ -194,6 +194,11 @@ class KafkaTest {
         assertFalse(output.contains("I've added this task"));
     }
 
+    /**
+     * Supplies bad commands alongside the one error each command should produce.
+     *
+     * @return invalid commands and their matching user-facing errors
+     */
     private static Stream<Arguments> invalidInputsAndExpectedErrors() {
         return Stream.of(
                 Arguments.of("todo", INPUT_ERROR_MESSAGES.get(0)),
@@ -209,6 +214,13 @@ class KafkaTest {
                 Arguments.of("todo compare A | B", INPUT_ERROR_MESSAGES.get(10)));
     }
 
+    /**
+     * Counts non-overlapping appearances of one value in some text.
+     *
+     * @param text complete text to search
+     * @param value value whose appearances should be counted
+     * @return number of non-overlapping appearances
+     */
     private static int countOccurrences(String text, String value) {
         int count = 0;
         int position = 0;
@@ -219,6 +231,12 @@ class KafkaTest {
         return count;
     }
 
+    /**
+     * Runs one isolated Kafka session using temporary storage and captured output.
+     *
+     * @param input newline-separated commands for the session
+     * @return everything Kafka printed during that session
+     */
     private String runKafka(String input) {
         capturedOutput.reset();
         System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
