@@ -66,7 +66,7 @@ class KafkaTest {
         assertTrue(output.contains("1.[T][ ] borrow book"));
         assertTrue(output.contains("2.[D][ ] return book (by: Sunday)"));
         assertTrue(output.contains(
-                "3.[E][ ] project meeting (from: Mon 2pm to: 4pm)"));
+                "3.[E][ ] project meeting (from: Mon 2pm to: 1600)"));
         assertTrue(output.contains("Now you have 3 tasks in the list."));
     }
 
