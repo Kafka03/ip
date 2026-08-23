@@ -11,6 +11,7 @@ class CommandTypeTest {
     @Test
     void fromInputRecognizesCommandWithArguments() {
         assertEquals(CommandType.TODO, CommandType.fromInput("todo read book"));
+        assertEquals(CommandType.FIND, CommandType.fromInput("find book"));
     }
 
     @Test

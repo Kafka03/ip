@@ -122,6 +122,7 @@ public class Kafka {
         case MARK -> markTask(input);
         case UNMARK -> unmarkTask(input);
         case DELETE -> deleteTask(input);
+        case FIND -> findTasks(input);
         case UNKNOWN, BYE -> showUnknownCommand();
         }
     }
@@ -212,6 +213,18 @@ public class Kafka {
         Task deletedTask = tasks.deleteTask(taskNumber);
         taskStorage.save(tasks);
         ui.showTaskDeleted(deletedTask, tasks.size());
+    }
+
+    /**
+     * Finds and displays tasks containing the keyword supplied by the user.
+     * Searching does not change the task list, so no save is needed.
+     *
+     * @param input complete find command
+     * @throws KafkaException if no search keyword was supplied
+     */
+    private void findTasks(String input) throws KafkaException {
+        String keyword = TaskParser.parseFindKeyword(input);
+        ui.showMatchingTasks(tasks.findTasks(keyword));
     }
 
     /**

@@ -103,6 +103,21 @@ class KafkaTest {
     }
 
     @Test
+    void mainFindsAndRenumbersMatchingTasks() {
+        String output = runKafka("todo read book\n"
+                + "deadline return book /by June 6th\n"
+                + "todo write essay\n"
+                + "mark 1\nmark 2\nfind book\nbye\n");
+
+        String normalizedOutput = output.replace("\r\n", "\n");
+        assertTrue(normalizedOutput.contains("I worked hard to find the matching tasks in your list king:\n"
+                + "1.[T][X] read book\n"
+                + "2.[D][X] return book (by: June 6th)\n"
+                + "_".repeat(60)));
+        assertFalse(output.contains("3.[T][ ] write essay"));
+    }
+
+    @Test
     void invalidCommandsDoNotCorruptTaskState() {
         String output = runKafka("todo read book\n"
                 + "deadline broken /by\n"

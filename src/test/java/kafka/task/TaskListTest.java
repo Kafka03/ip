@@ -85,4 +85,18 @@ class TaskListTest {
         assertEquals(2, tasks.size());
         assertEquals("[E][X] third (from: Monday to: Tuesday)", tasks.markTask(2));
     }
+
+    @Test
+    void findTasksReturnsCaseInsensitiveMatchesInOriginalOrder() {
+        TaskList tasks = new TaskList();
+        tasks.addTask(new Todo("read book"));
+        tasks.addTask(new Deadline("return BOOK", "June 6th"));
+        tasks.addTask(new Todo("write essay"));
+
+        java.util.List<Task> matches = tasks.findTasks("book");
+
+        assertEquals(2, matches.size());
+        assertEquals("[T][ ] read book", matches.get(0).display());
+        assertEquals("[D][ ] return BOOK (by: June 6th)", matches.get(1).display());
+    }
 }
