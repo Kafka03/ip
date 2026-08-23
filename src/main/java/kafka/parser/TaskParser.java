@@ -18,7 +18,8 @@ import kafka.task.Event;
 import kafka.task.Todo;
 
 /**
- * Converts typed commands into tasks and task numbers.
+ * Turns typed commands into proper task objects and clean task numbers, because
+ * raw input can be a little chaotic, bestie.
  */
 public final class TaskParser {
     private static final String BY_MARKER = "/by";
@@ -26,8 +27,10 @@ public final class TaskParser {
     private static final String TO_MARKER = "/to";
     private static final String STORAGE_DELIMITER_ERROR =
             "Task details cannot contain | sorryyy";
+    /** Accepted date patterns, ordered from machine-friendly to human-friendly. */
     private static final List<String> DATE_PATTERNS = List.of(
             "uuuu-MM-dd", "d/M/uuuu", "d MMM uuuu");
+    /** Accepted time patterns covering 24-hour and AM/PM input. */
     private static final List<String> TIME_PATTERNS = List.of(
             "HHmm", "H:mm", "h:mma", "ha");
     private static final List<DateTimeFormatter> DATE_INPUT_FORMATTERS =
@@ -43,10 +46,19 @@ public final class TaskParser {
     private static final DateTimeFormatter DATE_TIME_OUTPUT_FORMATTER =
             DateTimeFormatter.ofPattern("d MMM uuuu HHmm", Locale.ENGLISH);
 
-    // Parses a todo command and returns its task object.
+    /**
+     * Prevents creation of this utility-only class.
+     */
     private TaskParser() {
     }
 
+    /**
+     * Parses a todo command into an unfinished todo.
+     *
+     * @param input complete todo command entered by the user
+     * @return parsed todo, ready to join the task list
+     * @throws ParserException if the description is empty or unsafe to store
+     */
     public static Todo parseTodo(String input) throws ParserException {
         String description = input.substring(CommandType.TODO.keyword().length()).trim();
         if (description.isEmpty()) {
@@ -56,7 +68,13 @@ public final class TaskParser {
         return new Todo(description);
     }
 
-    // Parses a deadline command and separates its description and deadline.
+    /**
+     * Parses a deadline command and normalizes any recognized date or time.
+     *
+     * @param input complete deadline command entered by the user
+     * @return parsed deadline with display-ready timing text
+     * @throws ParserException if its description, marker, or deadline is invalid
+     */
     public static Deadline parseDeadline(String input) throws ParserException {
         String taskDetails = input.substring(CommandType.DEADLINE.keyword().length()).trim();
         int byMarkerPosition = taskDetails.indexOf(BY_MARKER);
@@ -79,7 +97,13 @@ public final class TaskParser {
         return new Deadline(description, normalizeDateTime(by));
     }
 
-    // Parses an event command and separates its description, start, and end.
+    /**
+     * Parses an event command into its description, start, and end values.
+     *
+     * @param input complete event command entered by the user
+     * @return parsed event with normalized timing text where possible
+     * @throws ParserException if required details or markers are invalid
+     */
     public static Event parseEvent(String input) throws ParserException {
         String taskDetails = input.substring(CommandType.EVENT.keyword().length()).trim();
         int fromMarkerPosition = taskDetails.indexOf(FROM_MARKER);
@@ -113,7 +137,10 @@ public final class TaskParser {
     }
 
     /**
-     * Rejects the pipe reserved as the separator in the task storage format.
+     * Rejects the pipe reserved as Kafka's storage separator—no data chaos today.
+     *
+     * @param values user-provided values that will be written to storage
+     * @throws ParserException if any value contains the reserved pipe character
      */
     private static void rejectStorageDelimiter(String... values) throws ParserException {
         for (String value : values) {
@@ -126,6 +153,9 @@ public final class TaskParser {
     /**
      * Converts a recognized date, time, or date-time into the standard display
      * format. Free-form text is preserved so values such as "Sunday" remain valid.
+     *
+     * @param value raw date, time, date-time, or free-form timing text
+     * @return normalized timing text, or the original value when it is free-form
      */
     private static String normalizeDateTime(String value) {
         String normalizedWhitespace = value.trim().replaceAll("\\s+", " ");
@@ -160,12 +190,23 @@ public final class TaskParser {
         return value;
     }
 
+    /**
+     * Creates strict, case-insensitive formatters for the supplied patterns.
+     *
+     * @param patterns date or time patterns to compile
+     * @return immutable list of ready-to-use formatters
+     */
     private static List<DateTimeFormatter> createFormatters(List<String> patterns) {
         return patterns.stream()
                 .map(TaskParser::createFormatter)
                 .toList();
     }
 
+    /**
+     * Creates every supported pairing of a date pattern and a time pattern.
+     *
+     * @return immutable list of supported date-time formatters
+     */
     private static List<DateTimeFormatter> createDateTimeFormatters() {
         List<DateTimeFormatter> formatters = new ArrayList<>();
         for (String datePattern : DATE_PATTERNS) {
@@ -176,6 +217,12 @@ public final class TaskParser {
         return List.copyOf(formatters);
     }
 
+    /**
+     * Creates one strict, English, case-insensitive formatter.
+     *
+     * @param pattern pattern understood by {@link DateTimeFormatter}
+     * @return formatter configured for reliable input validation
+     */
     private static DateTimeFormatter createFormatter(String pattern) {
         return new DateTimeFormatterBuilder()
                 .parseCaseInsensitive()
@@ -184,7 +231,14 @@ public final class TaskParser {
                 .withResolverStyle(ResolverStyle.STRICT);
     }
 
-    // Parses a positive task number from a mark, unmark, or delete command.
+    /**
+     * Parses a positive one-based task number from a task-selection command.
+     *
+     * @param input complete mark, unmark, or delete command
+     * @param command command keyword to remove before reading the number
+     * @return positive task number supplied by the user
+     * @throws ParserException if the value is not a positive whole number
+     */
     public static int parseTaskNumber(String input, String command) throws ParserException {
         String numberText = input.substring(command.length()).trim();
         try {
