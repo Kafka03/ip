@@ -1,6 +1,7 @@
 package kafka.task;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,6 +17,17 @@ import org.junit.jupiter.api.Test;
  * Keeps the task list honest about ordering, status changes, and deletion.
  */
 class TaskListTest {
+    @Test
+    void isEmptyReflectsWhetherTasksAreStored() {
+        TaskList tasks = new TaskList();
+
+        assertTrue(tasks.isEmpty());
+
+        tasks.addTask(new Todo("read book"));
+
+        assertFalse(tasks.isEmpty());
+    }
+
     @Test
     void showTasksDisplaysConcreteTasksInOrder() {
         TaskList tasks = new TaskList();
