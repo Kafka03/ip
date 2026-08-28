@@ -20,7 +20,7 @@ public class Kafka {
     /**
      * Creates Kafka with its usual {@code data/kafka.txt} storage file.
      */
-    Kafka() {
+    public Kafka() {
         this(new TaskStorage());
     }
 
@@ -231,5 +231,12 @@ public class Kafka {
      */
     private void showUnknownCommand() {
         ui.showUnknownCommand();
+    }
+
+    /**
+     * Generates a response for the user's chat message.
+     */
+    public String getResponse(String input) {
+        return "Kafka heard: " + input;
     }
 }

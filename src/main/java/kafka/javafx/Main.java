@@ -10,6 +10,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import kafka.Kafka;
 import kafka.javafx.components.DialogBox;
 
 /**
@@ -19,6 +20,7 @@ public class Main extends Application {
 
     private Image userImage = new Image(this.getClass().getResourceAsStream("/images/DaUser.png"));
     private Image kafkaImage = new Image(this.getClass().getResourceAsStream("/images/DaDuke.png"));
+    private Kafka kafka = new Kafka();
 
     private ScrollPane scrollPane;
     private VBox dialogContainer;
@@ -73,7 +75,7 @@ public class Main extends Application {
         stage.setScene(scene);
         stage.show();
 
-        //Handling user input
+        // Handle user input
         sendButton.setOnMouseClicked((event) -> {
             handleUserInput();
         });
@@ -82,7 +84,7 @@ public class Main extends Application {
             handleUserInput();
         });
 
-        //Scroll down to the end every time dialogContainer's height changes.
+        // Scroll down whenever the dialog container's height changes.
         dialogContainer.heightProperty().addListener((observable) -> scrollPane.setVvalue(1.0));
     }
 
@@ -91,7 +93,11 @@ public class Main extends Application {
      * the dialog container. Clears the user input after processing.
      */
     private void handleUserInput() {
-        dialogContainer.getChildren().addAll(new DialogBox(userInput.getText(), userImage));
+        String userText = userInput.getText();
+        String kafkaText = kafka.getResponse(userInput.getText());
+        dialogContainer.getChildren().addAll(
+                DialogBox.getUserDialog(userText, userImage),
+                DialogBox.getDukeDialog(kafkaText, kafkaImage));
         userInput.clear();
     }
 }
