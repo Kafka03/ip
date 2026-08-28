@@ -18,8 +18,7 @@ import kafka.task.Event;
 import kafka.task.Todo;
 
 /**
- * Turns typed commands into proper task objects and clean task numbers, because
- * raw input can be a little chaotic, bestie.
+ * Parses user commands into task objects, task numbers, and search keywords.
  */
 public final class TaskParser {
     private static final String BY_MARKER = "/by";
@@ -142,7 +141,7 @@ public final class TaskParser {
     }
 
     /**
-     * Rejects the pipe reserved as Kafka's storage separator—no data chaos today.
+     * Rejects values containing the pipe reserved as the storage separator.
      *
      * @param values user-provided values that will be written to storage
      * @throws ParserException if any value contains the reserved pipe character

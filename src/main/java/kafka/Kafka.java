@@ -10,8 +10,7 @@ import kafka.task.TaskList;
 import kafka.ui.Ui;
 
 /**
- * Runs the whole Kafka show by coordinating the UI, parser, storage, and task
- * list without making any one of them do everything.
+ * Coordinates the user interface, command parser, task storage, and task list.
  */
 public class Kafka {
     private final Ui ui;
@@ -26,8 +25,7 @@ public class Kafka {
     }
 
     /**
-     * Creates Kafka with a specified storage location, which also makes
-     * persistence testable without changing the user's real data file.
+     * Creates Kafka with the specified task storage service.
      *
      * @param taskStorage storage service Kafka should use for this session
      */
@@ -38,7 +36,7 @@ public class Kafka {
     }
 
     /**
-     * Starts a fresh Kafka session, period.
+     * Starts a Kafka session.
      *
      * @param args command-line arguments; Kafka does not currently use them
      */
@@ -107,7 +105,7 @@ public class Kafka {
     }
 
     /**
-     * Sends a recognized command to the method that knows its business.
+     * Dispatches a recognized command to the corresponding handler.
      *
      * @param command recognized command type
      * @param input complete input containing any command arguments
@@ -115,15 +113,16 @@ public class Kafka {
      */
     private void processCommand(CommandType command, String input) throws KafkaException {
         switch (command) {
-        case LIST -> showList();
-        case TODO -> addTodo(input);
-        case DEADLINE -> addDeadline(input);
-        case EVENT -> addEvent(input);
-        case MARK -> markTask(input);
-        case UNMARK -> unmarkTask(input);
-        case DELETE -> deleteTask(input);
-        case FIND -> findTasks(input);
-        case UNKNOWN, BYE -> showUnknownCommand();
+            case LIST -> showList();
+            case TODO -> addTodo(input);
+            case DEADLINE -> addDeadline(input);
+            case EVENT -> addEvent(input);
+            case MARK -> markTask(input);
+            case UNMARK -> unmarkTask(input);
+            case DELETE -> deleteTask(input);
+            case FIND -> findTasks(input);
+            case UNKNOWN, BYE -> showUnknownCommand();
+            default -> showUnknownCommand();
         }
     }
 
@@ -165,7 +164,7 @@ public class Kafka {
     }
 
     /**
-     * Adds a typed task, saves the whole list, and celebrates the result.
+     * Adds a task, saves the updated list, and displays a confirmation.
      *
      * @param task parsed task to add
      * @throws KafkaException if the updated list cannot be saved
@@ -190,7 +189,7 @@ public class Kafka {
     }
 
     /**
-     * Unmarks the task number supplied by the user—comebacks are allowed.
+     * Unmarks the task number supplied by the user.
      *
      * @param input complete unmark command
      * @throws KafkaException if the number is invalid or saving fails

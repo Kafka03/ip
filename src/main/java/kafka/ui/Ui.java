@@ -8,7 +8,7 @@ import kafka.task.Task;
 import kafka.task.TaskList;
 
 /**
- * Handles every console conversation so Kafka's other classes can stay focused.
+ * Handles console input and displays messages to the user.
  */
 public class Ui {
     private static final String DIVIDER = "_".repeat(60);
@@ -37,7 +37,7 @@ public class Ui {
     }
 
     /**
-     * Displays every task, or reassures the user when the list is empty.
+     * Displays every task or an empty-list message.
      *
      * @param tasks task list to display
      */
@@ -65,7 +65,7 @@ public class Ui {
     }
 
     /**
-     * Celebrates a newly added task and displays the updated count.
+     * Confirms that a task was added and displays the updated count.
      *
      * @param task task that joined the list
      * @param taskCount number of tasks now stored
@@ -81,7 +81,7 @@ public class Ui {
     }
 
     /**
-     * Confirms that a task is officially done—iconic behavior.
+     * Confirms that a task was marked as completed.
      *
      * @param task updated display text for the completed task
      */
@@ -93,7 +93,7 @@ public class Ui {
     }
 
     /**
-     * Confirms that a task has returned to the unfinished era.
+     * Confirms that a task was marked as incomplete.
      *
      * @param task updated display text for the incomplete task
      */
@@ -105,7 +105,7 @@ public class Ui {
     }
 
     /**
-     * Confirms that a task was yeeted and displays the updated count.
+     * Confirms that a task was deleted and displays the updated count.
      *
      * @param task task removed from the list
      * @param taskCount number of tasks still stored
@@ -120,7 +120,7 @@ public class Ui {
     }
 
     /**
-     * Explains that the user's command is a mystery to Kafka.
+     * Informs the user that the command is not recognized.
      */
     public void showUnknownCommand() {
         System.out.println(DIVIDER);
@@ -141,7 +141,7 @@ public class Ui {
 
     /**
      * Asks for explicit permission before replacing a corrupted task file.
-     * Keeps asking until the user says yes or no, because consent matters.
+     * Repeats the prompt until the user enters yes or no.
      *
      * @param filePath corrupted task file that would be replaced
      * @return {@code true} only when the user approves the overwrite
@@ -187,7 +187,7 @@ public class Ui {
     }
 
     /**
-     * Prints Kafka's banner and very normal welcome message.
+     * Prints Kafka's banner and welcome message.
      */
     public void greet() {
         System.out.println(DIVIDER);

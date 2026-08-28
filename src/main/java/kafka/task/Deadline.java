@@ -1,8 +1,8 @@
 package kafka.task;
 
 /**
- * Represents a task that needs to be done by a particular date or time—clock's
- * ticking, alpha. The deadline is stored as display-ready text.
+ * Represents a task that must be completed by a specified date or time.
+ * The deadline is stored as display-ready text.
  */
 public class Deadline extends Task {
     private final String by;

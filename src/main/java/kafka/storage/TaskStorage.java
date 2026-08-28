@@ -15,7 +15,7 @@ import kafka.task.TaskList;
 import kafka.task.Todo;
 
 /**
- * Saves the task squad and brings it back next session like nothing happened.
+ * Saves and loads tasks using a line-based text file.
  * Each line uses the format {@code type | status | task details}.
  */
 public class TaskStorage {
@@ -37,7 +37,7 @@ public class TaskStorage {
     }
 
     /**
-     * Creates storage backed by a specific file, which is handy for isolated tests.
+     * Creates storage backed by a specified file.
      *
      * @param filePath task data file to read and write
      */
@@ -46,7 +46,7 @@ public class TaskStorage {
     }
 
     /**
-     * Returns the absolute task-file location so a user can find the drama.
+     * Returns the absolute location of the task data file.
      *
      * @return normalized absolute path to the task data file
      */
@@ -128,22 +128,22 @@ public class TaskStorage {
         }
 
         switch (type) {
-        case TODO_TYPE -> {
-            requireFieldCount(fields, 3, lineNumber);
-            task = new Todo(fields[2]);
-        }
-        case DEADLINE_TYPE -> {
-            requireFieldCount(fields, 4, lineNumber);
-            requireNonBlank(fields[3], lineNumber);
-            task = new Deadline(fields[2], fields[3]);
-        }
-        case EVENT_TYPE -> {
-            requireFieldCount(fields, 5, lineNumber);
-            requireNonBlank(fields[3], lineNumber);
-            requireNonBlank(fields[4], lineNumber);
-            task = new Event(fields[2], fields[3], fields[4]);
-        }
-        default -> throw malformedLine(lineNumber);
+            case TODO_TYPE -> {
+                requireFieldCount(fields, 3, lineNumber);
+                task = new Todo(fields[2]);
+            }
+            case DEADLINE_TYPE -> {
+                requireFieldCount(fields, 4, lineNumber);
+                requireNonBlank(fields[3], lineNumber);
+                task = new Deadline(fields[2], fields[3]);
+            }
+            case EVENT_TYPE -> {
+                requireFieldCount(fields, 5, lineNumber);
+                requireNonBlank(fields[3], lineNumber);
+                requireNonBlank(fields[4], lineNumber);
+                task = new Event(fields[2], fields[3], fields[4]);
+            }
+            default -> throw malformedLine(lineNumber);
         }
 
         if (status.equals(DONE_STATUS)) {
@@ -160,7 +160,7 @@ public class TaskStorage {
      * @param fields fields parsed from the record
      * @param expected required field count
      * @param lineNumber one-based source line used in corruption messages
-     * @throws KafkaException if the field count is serving the wrong number
+     * @throws KafkaException if the record has an unexpected number of fields
      */
     private void requireFieldCount(String[] fields, int expected, int lineNumber)
             throws KafkaException {

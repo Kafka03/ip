@@ -15,8 +15,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-import kafka.storage.TaskStorage;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +23,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import kafka.storage.TaskStorage;
+
 /**
- * Runs full Kafka conversations so the whole squad proves it can work together.
+ * Tests complete Kafka sessions across the user interface and application layers.
  */
 class KafkaTest {
     private static final List<String> INPUT_ERROR_MESSAGES = List.of(

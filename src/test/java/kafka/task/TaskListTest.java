@@ -9,12 +9,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
-import kafka.exception.KafkaException;
-
 import org.junit.jupiter.api.Test;
 
+import kafka.exception.KafkaException;
+
 /**
- * Keeps the task list honest about ordering, status changes, and deletion.
+ * Tests task ordering, status changes, and deletion in a task list.
  */
 class TaskListTest {
     @Test

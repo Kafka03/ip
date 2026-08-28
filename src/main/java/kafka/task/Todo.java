@@ -1,7 +1,7 @@
 package kafka.task;
 
 /**
- * Represents a chill little task with no date or time attached.
+ * Represents a task without an associated date or time.
  */
 public class Todo extends Task {
     /**
