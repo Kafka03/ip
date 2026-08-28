@@ -5,7 +5,7 @@ package kafka.exception;
  */
 public class CorruptedTaskDataException extends KafkaException {
     /**
-     * Creates a corruption error that identifies the troublesome saved data.
+     * Creates an error that identifies corrupted saved data.
      *
      * @param message explanation of where the corrupted data was found
      */

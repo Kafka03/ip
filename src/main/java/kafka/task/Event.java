@@ -1,8 +1,8 @@
 package kafka.task;
 
 /**
- * Represents something happening between a start and an end—very booked and
- * busy. Both values are stored as display-ready text.
+ * Represents an event with specified start and end values.
+ * Both values are stored as display-ready text.
  */
 public class Event extends Task {
     private final String from;

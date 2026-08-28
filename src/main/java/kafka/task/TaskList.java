@@ -7,14 +7,14 @@ import java.util.Locale;
 import kafka.exception.KafkaException;
 
 /**
- * Keeps the user's task squad together in its current order.
+ * Stores and manages tasks in list order.
  */
 public class TaskList {
     private static final String DIVIDER = "_".repeat(60);
     private final List<Task> taskList;
 
     /**
-     * Creates an empty task list, ready for the grind.
+     * Creates an empty task list.
      */
     public TaskList() {
         taskList = new ArrayList<>();
@@ -32,7 +32,7 @@ public class TaskList {
     /**
      * Deletes the task at the user-facing one-based position.
      *
-     * @param taskNumber one-based number of the task to yeet
+     * @param taskNumber one-based number of the task to delete
      * @return task removed from the list
      * @throws KafkaException if no task has that number
      */
@@ -41,7 +41,7 @@ public class TaskList {
     }
 
     /**
-     * Returns how many tasks are currently serving in the list.
+     * Returns the number of tasks in the list.
      *
      * @return number of stored tasks
      */

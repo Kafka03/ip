@@ -26,7 +26,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Checks that saved tasks survive the session break and corrupted records do not.
+ * Tests task persistence and rejection of corrupted storage records.
  */
 class TaskStorageTest {
     @TempDir

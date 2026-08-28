@@ -1,7 +1,7 @@
 package kafka.exception;
 
 /**
- * Represents an expected hiccup that Kafka can explain without crashing.
+ * Represents an expected error that Kafka can report to the user.
  */
 public class KafkaException extends Exception {
     /**

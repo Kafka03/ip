@@ -26,7 +26,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Runs full Kafka conversations so the whole squad proves it can work together.
+ * Tests complete Kafka sessions across the user interface and application layers.
  */
 class KafkaTest {
     private static final List<String> INPUT_ERROR_MESSAGES = List.of(

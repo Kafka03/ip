@@ -14,7 +14,7 @@ import kafka.exception.KafkaException;
 import org.junit.jupiter.api.Test;
 
 /**
- * Keeps the task list honest about ordering, status changes, and deletion.
+ * Tests task ordering, status changes, and deletion in a task list.
  */
 class TaskListTest {
     @Test

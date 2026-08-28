@@ -1,7 +1,7 @@
 package kafka.command;
 
 /**
- * Lists every command Kafka understands, plus {@link #UNKNOWN} for mystery input.
+ * Lists every supported command and {@link #UNKNOWN} for unrecognized input.
  */
 public enum CommandType {
     /** Adds a task with no date or time attached. */
@@ -10,15 +10,15 @@ public enum CommandType {
     DEADLINE("deadline", true),
     /** Adds a task happening between start and end values. */
     EVENT("event", true),
-    /** Marks a numbered task as completed—slay. */
+    /** Marks a numbered task as completed. */
     MARK("mark", true),
-    /** Returns a numbered task to its unfinished era. */
+    /** Marks a numbered task as incomplete. */
     UNMARK("unmark", true),
     /** Removes a numbered task from the list. */
     DELETE("delete", true),
     /** Finds tasks containing a supplied keyword. */
     FIND("find", true),
-    /** Displays the full task squad in order. */
+    /** Displays all tasks in list order. */
     LIST("list", false),
     /** Ends the current Kafka session. */
     BYE("bye", false),
@@ -34,7 +34,7 @@ public enum CommandType {
     }
 
     /**
-     * Returns the keyword users type to summon this command.
+     * Returns the keyword used to invoke this command.
      *
      * @return this command's lowercase keyword
      */
@@ -43,7 +43,7 @@ public enum CommandType {
     }
 
     /**
-     * Identifies the command at the front of a user's input, meow.
+     * Identifies the command at the start of the user's input.
      * Argument-free commands must appear alone, while the others may be followed
      * by a space and their details.
      *

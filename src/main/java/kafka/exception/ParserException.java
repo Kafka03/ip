@@ -1,7 +1,7 @@
 package kafka.exception;
 
 /**
- * Reports command input that Kafka cannot parse yet, bestie.
+ * Reports command input that Kafka cannot parse.
  */
 public class ParserException extends KafkaException {
     /**

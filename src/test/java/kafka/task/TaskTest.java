@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 /**
- * Checks that every concrete task looks right and inherits its completion glow-up.
+ * Tests display and completion behavior for each concrete task type.
  */
 class TaskTest {
     @Test

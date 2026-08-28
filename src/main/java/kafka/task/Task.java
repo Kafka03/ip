@@ -1,7 +1,7 @@
 package kafka.task;
 
 /**
- * Represents one item in the user's hustle list, with a name and completion state.
+ * Represents a task with a description and completion state.
  */
 public abstract class Task {
     private final String name;
@@ -20,7 +20,7 @@ public abstract class Task {
     /**
      * Marks this task as completed.
      *
-     * @return display text showing the freshly completed task
+     * @return display text showing the completed task
      */
     public String mark() {
         isDone = true;
@@ -28,7 +28,7 @@ public abstract class Task {
     }
 
     /**
-     * Marks this task as incomplete again—no judgment here.
+     * Marks this task as incomplete.
      *
      * @return display text showing the incomplete task
      */
@@ -59,7 +59,7 @@ public abstract class Task {
     }
 
     /**
-     * Converts this task into one save-file line so Kafka remembers it next time.
+     * Converts this task into one line in the task data file.
      *
      * @return complete serialized form of this task
      */

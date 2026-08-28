@@ -13,7 +13,7 @@ import kafka.task.Todo;
 import org.junit.jupiter.api.Test;
 
 /**
- * Throws valid and chaotic commands at the parser to check what comes back.
+ * Tests parsing of valid and invalid task commands.
  */
 class TaskParserTest {
     @Test
