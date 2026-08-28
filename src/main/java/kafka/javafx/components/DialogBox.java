@@ -64,7 +64,7 @@ public class DialogBox extends HBox {
      * @param image Kafka image to display
      * @return left-aligned Kafka dialog box
      */
-    public static DialogBox getDukeDialog(String message, Image image) {
+    public static DialogBox getKafkaDialog(String message, Image image) {
         DialogBox dialogBox = new DialogBox(message, image);
         dialogBox.flip();
         return dialogBox;

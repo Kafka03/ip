@@ -97,7 +97,7 @@ public class Main extends Application {
         String kafkaText = kafka.getResponse(userInput.getText());
         dialogContainer.getChildren().addAll(
                 DialogBox.getUserDialog(userText, userImage),
-                DialogBox.getDukeDialog(kafkaText, kafkaImage));
+                DialogBox.getKafkaDialog(kafkaText, kafkaImage));
         userInput.clear();
     }
 }
