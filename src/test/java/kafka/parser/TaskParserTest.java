@@ -4,13 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
+
 import kafka.exception.ParserException;
 import kafka.task.Deadline;
 import kafka.task.Event;
 import kafka.task.Task;
 import kafka.task.Todo;
-
-import org.junit.jupiter.api.Test;
 
 /**
  * Tests parsing of valid and invalid task commands.
@@ -31,8 +31,8 @@ class TaskParserTest {
 
     @Test
     void parseTodoRejectsStorageDelimiterInDescription() {
-        ParserException exception = assertThrows(ParserException.class,
-                () -> TaskParser.parseTodo("todo compare Java | Python"));
+        ParserException exception = assertThrows(ParserException.class, () ->
+                TaskParser.parseTodo("todo compare Java | Python"));
 
         assertEquals("Task details cannot contain | sorryyy", exception.getMessage());
     }
@@ -79,22 +79,22 @@ class TaskParserTest {
 
     @Test
     void parseDeadlineRejectsMissingByMarker() {
-        assertThrows(ParserException.class,
-                () -> TaskParser.parseDeadline("deadline return book"));
+        assertThrows(ParserException.class, () ->
+                TaskParser.parseDeadline("deadline return book"));
     }
 
     @Test
     void parseDeadlineRejectsEmptyDeadline() {
-        assertThrows(ParserException.class,
-                () -> TaskParser.parseDeadline("deadline return book /by"));
+        assertThrows(ParserException.class, () ->
+                TaskParser.parseDeadline("deadline return book /by"));
     }
 
     @Test
     void parseDeadlineRejectsStorageDelimiterInEverySavedField() {
-        ParserException descriptionError = assertThrows(ParserException.class,
-                () -> TaskParser.parseDeadline("deadline compare A | B /by Friday"));
-        ParserException deadlineError = assertThrows(ParserException.class,
-                () -> TaskParser.parseDeadline("deadline submit report /by Fri | Sat"));
+        ParserException descriptionError = assertThrows(ParserException.class, () ->
+                TaskParser.parseDeadline("deadline compare A | B /by Friday"));
+        ParserException deadlineError = assertThrows(ParserException.class, () ->
+                TaskParser.parseDeadline("deadline submit report /by Fri | Sat"));
 
         assertEquals("Task details cannot contain | sorryyy", descriptionError.getMessage());
         assertEquals("Task details cannot contain | sorryyy", deadlineError.getMessage());
@@ -121,26 +121,26 @@ class TaskParserTest {
 
     @Test
     void parseEventRejectsMissingMarkers() {
-        assertThrows(ParserException.class,
-                () -> TaskParser.parseEvent("event project meeting"));
+        assertThrows(ParserException.class, () ->
+                TaskParser.parseEvent("event project meeting"));
     }
 
     @Test
     void parseEventRejectsEmptyStartOrEnd() {
-        assertThrows(ParserException.class,
-                () -> TaskParser.parseEvent("event project meeting /from /to 4pm"));
-        assertThrows(ParserException.class,
-                () -> TaskParser.parseEvent("event project meeting /from 2pm /to"));
+        assertThrows(ParserException.class, () ->
+                TaskParser.parseEvent("event project meeting /from /to 4pm"));
+        assertThrows(ParserException.class, () ->
+                TaskParser.parseEvent("event project meeting /from 2pm /to"));
     }
 
     @Test
     void parseEventRejectsStorageDelimiterInEverySavedField() {
-        ParserException descriptionError = assertThrows(ParserException.class,
-                () -> TaskParser.parseEvent("event compare A | B /from 2pm /to 3pm"));
-        ParserException startError = assertThrows(ParserException.class,
-                () -> TaskParser.parseEvent("event meeting /from Mon | Tue /to Wed"));
-        ParserException endError = assertThrows(ParserException.class,
-                () -> TaskParser.parseEvent("event meeting /from Mon /to Tue | Wed"));
+        ParserException descriptionError = assertThrows(ParserException.class, () ->
+                TaskParser.parseEvent("event compare A | B /from 2pm /to 3pm"));
+        ParserException startError = assertThrows(ParserException.class, () ->
+                TaskParser.parseEvent("event meeting /from Mon | Tue /to Wed"));
+        ParserException endError = assertThrows(ParserException.class, () ->
+                TaskParser.parseEvent("event meeting /from Mon /to Tue | Wed"));
 
         assertEquals("Task details cannot contain | sorryyy", descriptionError.getMessage());
         assertEquals("Task details cannot contain | sorryyy", startError.getMessage());
@@ -154,9 +154,9 @@ class TaskParserTest {
 
     @Test
     void parseTaskNumberRejectsInvalidNumbers() {
-        assertThrows(ParserException.class,
-                () -> TaskParser.parseTaskNumber("mark abc", "mark"));
-        assertThrows(ParserException.class,
-                () -> TaskParser.parseTaskNumber("mark 0", "mark"));
+        assertThrows(ParserException.class, () ->
+                TaskParser.parseTaskNumber("mark abc", "mark"));
+        assertThrows(ParserException.class, () ->
+                TaskParser.parseTaskNumber("mark 0", "mark"));
     }
 }

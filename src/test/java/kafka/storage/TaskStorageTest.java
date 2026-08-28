@@ -11,6 +11,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import kafka.exception.CorruptedTaskDataException;
 import kafka.exception.KafkaException;
 import kafka.task.Deadline;
@@ -18,12 +24,6 @@ import kafka.task.Event;
 import kafka.task.Task;
 import kafka.task.TaskList;
 import kafka.task.Todo;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests task persistence and rejection of corrupted storage records.
@@ -105,9 +105,8 @@ class TaskStorageTest {
         Path dataFile = temporaryDirectory.resolve("kafka.txt");
         Files.write(dataFile, List.of("T | 0 | valid task", invalidRecord));
 
-        CorruptedTaskDataException exception = assertThrows(
-                CorruptedTaskDataException.class,
-                () -> new TaskStorage(dataFile).load());
+        CorruptedTaskDataException exception = assertThrows(CorruptedTaskDataException.class, () ->
+            new TaskStorage(dataFile).load());
 
         assertEquals("Malformed task data on line 2 of " + dataFile,
                 exception.getMessage());

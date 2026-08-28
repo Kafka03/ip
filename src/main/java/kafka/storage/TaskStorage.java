@@ -128,22 +128,22 @@ public class TaskStorage {
         }
 
         switch (type) {
-        case TODO_TYPE -> {
-            requireFieldCount(fields, 3, lineNumber);
-            task = new Todo(fields[2]);
-        }
-        case DEADLINE_TYPE -> {
-            requireFieldCount(fields, 4, lineNumber);
-            requireNonBlank(fields[3], lineNumber);
-            task = new Deadline(fields[2], fields[3]);
-        }
-        case EVENT_TYPE -> {
-            requireFieldCount(fields, 5, lineNumber);
-            requireNonBlank(fields[3], lineNumber);
-            requireNonBlank(fields[4], lineNumber);
-            task = new Event(fields[2], fields[3], fields[4]);
-        }
-        default -> throw malformedLine(lineNumber);
+            case TODO_TYPE -> {
+                requireFieldCount(fields, 3, lineNumber);
+                task = new Todo(fields[2]);
+            }
+            case DEADLINE_TYPE -> {
+                requireFieldCount(fields, 4, lineNumber);
+                requireNonBlank(fields[3], lineNumber);
+                task = new Deadline(fields[2], fields[3]);
+            }
+            case EVENT_TYPE -> {
+                requireFieldCount(fields, 5, lineNumber);
+                requireNonBlank(fields[3], lineNumber);
+                requireNonBlank(fields[4], lineNumber);
+                task = new Event(fields[2], fields[3], fields[4]);
+            }
+            default -> throw malformedLine(lineNumber);
         }
 
         if (status.equals(DONE_STATUS)) {

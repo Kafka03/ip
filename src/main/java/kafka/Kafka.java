@@ -113,15 +113,16 @@ public class Kafka {
      */
     private void processCommand(CommandType command, String input) throws KafkaException {
         switch (command) {
-        case LIST -> showList();
-        case TODO -> addTodo(input);
-        case DEADLINE -> addDeadline(input);
-        case EVENT -> addEvent(input);
-        case MARK -> markTask(input);
-        case UNMARK -> unmarkTask(input);
-        case DELETE -> deleteTask(input);
-        case FIND -> findTasks(input);
-        case UNKNOWN, BYE -> showUnknownCommand();
+            case LIST -> showList();
+            case TODO -> addTodo(input);
+            case DEADLINE -> addDeadline(input);
+            case EVENT -> addEvent(input);
+            case MARK -> markTask(input);
+            case UNMARK -> unmarkTask(input);
+            case DELETE -> deleteTask(input);
+            case FIND -> findTasks(input);
+            case UNKNOWN, BYE -> showUnknownCommand();
+            default -> showUnknownCommand();
         }
     }
 
