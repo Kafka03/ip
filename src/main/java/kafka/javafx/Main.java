@@ -10,6 +10,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import kafka.Kafka;
 import kafka.javafx.components.DialogBox;
 
 /**
@@ -19,6 +20,7 @@ public class Main extends Application {
 
     private Image userImage = new Image(this.getClass().getResourceAsStream("/images/DaUser.png"));
     private Image kafkaImage = new Image(this.getClass().getResourceAsStream("/images/DaDuke.png"));
+    private Kafka kafka = new Kafka();
 
     private ScrollPane scrollPane;
     private VBox dialogContainer;
@@ -36,9 +38,6 @@ public class Main extends Application {
 
         userInput = new TextField();
         sendButton = new Button("Send");
-
-        DialogBox dialogBox = new DialogBox("Hello!", userImage);
-        dialogContainer.getChildren().addAll(dialogBox);
 
         AnchorPane mainLayout = new AnchorPane();
         mainLayout.getChildren().addAll(scrollPane, userInput, sendButton);
@@ -75,5 +74,30 @@ public class Main extends Application {
 
         stage.setScene(scene);
         stage.show();
+
+        // Handle user input
+        sendButton.setOnMouseClicked((event) -> {
+            handleUserInput();
+        });
+
+        userInput.setOnAction((event) -> {
+            handleUserInput();
+        });
+
+        // Scroll down whenever the dialog container's height changes.
+        dialogContainer.heightProperty().addListener((observable) -> scrollPane.setVvalue(1.0));
+    }
+
+    /**
+     * Creates a dialog box containing user input, and appends it to
+     * the dialog container. Clears the user input after processing.
+     */
+    private void handleUserInput() {
+        String userText = userInput.getText();
+        String kafkaText = kafka.getResponse(userInput.getText());
+        dialogContainer.getChildren().addAll(
+                DialogBox.getUserDialog(userText, userImage),
+                DialogBox.getDukeDialog(kafkaText, kafkaImage));
+        userInput.clear();
     }
 }
