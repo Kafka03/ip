@@ -59,7 +59,7 @@ run {
 }
 
 application {
-    mainClass = 'kafka.Kafka'
+    mainClass.set("kafka.javafx.Launcher")
 }
 
 shadowJar {
