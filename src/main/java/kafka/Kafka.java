@@ -17,6 +17,7 @@ public class Kafka {
     private final TaskStorage taskStorage;
     private TaskList tasks;
     private boolean isLoaded;
+    private boolean wasLastResponseError;
 
     /**
      * Creates Kafka with its usual {@code data/kafka.txt} storage file.
@@ -35,6 +36,7 @@ public class Kafka {
         this.taskStorage = taskStorage;
         this.tasks = new TaskList();
         this.isLoaded = false;
+        this.wasLastResponseError = false;
     }
 
     /**
@@ -242,6 +244,7 @@ public class Kafka {
      */
     public String getResponse(String input) {
         CommandType command = CommandType.fromInput(input);
+        wasLastResponseError = command == CommandType.UNKNOWN;
         if (command == CommandType.BYE) {
             return ui.formatFarewell();
         }
@@ -250,8 +253,18 @@ public class Kafka {
             ensureTasksLoaded();
             return processCommand(command, input);
         } catch (KafkaException exception) {
+            wasLastResponseError = true;
             return ui.formatError(exception.getMessage());
         }
+    }
+
+    /**
+     * Returns whether the most recently generated response reports an error.
+     *
+     * @return {@code true} if the latest response is an error
+     */
+    public boolean wasLastResponseError() {
+        return wasLastResponseError;
     }
 
     /**

@@ -51,9 +51,12 @@ public class MainWindow extends AnchorPane {
     private void handleUserInput() {
         String input = userInput.getText();
         String response = kafka.getResponse(input);
+        DialogBox responseDialog = kafka.wasLastResponseError()
+                ? DialogBox.getErrorDialog(response, kafkaImage)
+                : DialogBox.getKafkaDialog(response, kafkaImage);
         dialogContainer.getChildren().addAll(
                 DialogBox.getUserDialog(input, userImage),
-                DialogBox.getKafkaDialog(response, kafkaImage)
+                responseDialog
         );
         userInput.clear();
     }

@@ -14,6 +14,12 @@
     -fx-border-radius: 1em 1em 1em 0;
 }
 
+.error-label {
+    -fx-background-color: linear-gradient(to bottom right, #4a2529, #321d20);
+    -fx-border-color: #d95763;
+    -fx-text-fill: #ff8a94;
+}
+
 #displayPicture {
     /* Shadow effect on image. */
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 10, 0.4, 3, 4);

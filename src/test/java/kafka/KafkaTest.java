@@ -151,6 +151,18 @@ class KafkaTest {
     }
 
     @Test
+    void responseErrorStateTracksLatestResponse() {
+        TaskStorage taskStorage = new TaskStorage(temporaryDirectory.resolve("tasks.txt"));
+        Kafka kafka = new Kafka(taskStorage);
+
+        kafka.getResponse("todo");
+        assertTrue(kafka.wasLastResponseError());
+
+        kafka.getResponse("todo read book");
+        assertFalse(kafka.wasLastResponseError());
+    }
+
+    @Test
     void mainStopsImmediatelyOnBye() {
         String output = runKafka("bye\n");
 

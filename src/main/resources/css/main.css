@@ -22,7 +22,7 @@
     -fx-background-color: accent-color;
     -fx-background-radius: 0.5em;
     -fx-text-fill: white;
-    -fx-font: italic bold 16px "Arial";
+    -fx-font: bold 16px "Segoe UI";
     -fx-cursor: hand;
 }
 
