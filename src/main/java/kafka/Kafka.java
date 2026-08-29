@@ -16,6 +16,8 @@ public class Kafka {
     private final Ui ui;
     private final TaskStorage taskStorage;
     private TaskList tasks;
+    private boolean isLoaded;
+    private boolean wasLastResponseError;
 
     /**
      * Creates Kafka with its usual {@code data/kafka.txt} storage file.
@@ -33,6 +35,8 @@ public class Kafka {
         this.ui = new Ui();
         this.taskStorage = taskStorage;
         this.tasks = new TaskList();
+        this.isLoaded = false;
+        this.wasLastResponseError = false;
     }
 
     /**
@@ -61,11 +65,7 @@ public class Kafka {
             if (command == CommandType.BYE) {
                 break;
             }
-            try {
-                processCommand(command, input);
-            } catch (KafkaException exception) {
-                ui.showError(exception.getMessage());
-            }
+            System.out.println(getResponse(input));
         }
 
         ui.sayBye();
@@ -80,6 +80,7 @@ public class Kafka {
     private boolean loadTasks() {
         try {
             tasks = taskStorage.load();
+            isLoaded = true;
             return true;
         } catch (CorruptedTaskDataException exception) {
             ui.showError(exception.getMessage());
@@ -90,6 +91,7 @@ public class Kafka {
 
             try {
                 taskStorage.save(tasks);
+                isLoaded = true;
                 ui.showStorageOverwritten();
                 return true;
             } catch (KafkaException saveException) {
@@ -111,9 +113,9 @@ public class Kafka {
      * @param input complete input containing any command arguments
      * @throws KafkaException if parsing, task handling, or saving fails
      */
-    private void processCommand(CommandType command, String input) throws KafkaException {
-        switch (command) {
-            case LIST -> showList();
+    private String processCommand(CommandType command, String input) throws KafkaException {
+        return switch (command) {
+            case LIST -> listTasks();
             case TODO -> addTodo(input);
             case DEADLINE -> addDeadline(input);
             case EVENT -> addEvent(input);
@@ -121,16 +123,16 @@ public class Kafka {
             case UNMARK -> unmarkTask(input);
             case DELETE -> deleteTask(input);
             case FIND -> findTasks(input);
-            case UNKNOWN, BYE -> showUnknownCommand();
-            default -> showUnknownCommand();
-        }
+            case UNKNOWN, BYE -> handleUnknownCommand();
+            default -> handleUnknownCommand();
+        };
     }
 
     /**
      * Displays all tasks in their current order.
      */
-    private void showList() {
-        ui.showTaskList(tasks);
+    private String listTasks() {
+        return ui.formatTaskList(tasks);
     }
 
     /**
@@ -139,8 +141,8 @@ public class Kafka {
      * @param input complete todo command
      * @throws KafkaException if parsing or saving fails
      */
-    private void addTodo(String input) throws KafkaException {
-        addAndShow(TaskParser.parseTodo(input));
+    private String addTodo(String input) throws KafkaException {
+        return addAndGetResponse(TaskParser.parseTodo(input));
     }
 
     /**
@@ -149,8 +151,8 @@ public class Kafka {
      * @param input complete deadline command
      * @throws KafkaException if parsing or saving fails
      */
-    private void addDeadline(String input) throws KafkaException {
-        addAndShow(TaskParser.parseDeadline(input));
+    private String addDeadline(String input) throws KafkaException {
+        return addAndGetResponse(TaskParser.parseDeadline(input));
     }
 
     /**
@@ -159,8 +161,8 @@ public class Kafka {
      * @param input complete event command
      * @throws KafkaException if parsing or saving fails
      */
-    private void addEvent(String input) throws KafkaException {
-        addAndShow(TaskParser.parseEvent(input));
+    private String addEvent(String input) throws KafkaException {
+        return addAndGetResponse(TaskParser.parseEvent(input));
     }
 
     /**
@@ -169,10 +171,10 @@ public class Kafka {
      * @param task parsed task to add
      * @throws KafkaException if the updated list cannot be saved
      */
-    private void addAndShow(Task task) throws KafkaException {
+    private String addAndGetResponse(Task task) throws KafkaException {
         tasks.addTask(task);
         taskStorage.save(tasks);
-        ui.showTaskAdded(task, tasks.size());
+        return ui.formatTaskAdded(task, tasks.size());
     }
 
     /**
@@ -181,11 +183,11 @@ public class Kafka {
      * @param input complete mark command
      * @throws KafkaException if the number is invalid or saving fails
      */
-    private void markTask(String input) throws KafkaException {
+    private String markTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.keyword());
         String markedTask = tasks.markTask(taskNumber);
         taskStorage.save(tasks);
-        ui.showTaskMarked(markedTask);
+        return ui.formatTaskMarked(markedTask);
     }
 
     /**
@@ -194,11 +196,11 @@ public class Kafka {
      * @param input complete unmark command
      * @throws KafkaException if the number is invalid or saving fails
      */
-    private void unmarkTask(String input) throws KafkaException {
+    private String unmarkTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.keyword());
         String unmarkedTask = tasks.unmarkTask(taskNumber);
         taskStorage.save(tasks);
-        ui.showTaskUnmarked(unmarkedTask);
+        return ui.formatTaskUnmarked(unmarkedTask);
     }
 
     /**
@@ -207,11 +209,11 @@ public class Kafka {
      * @param input complete delete command
      * @throws KafkaException if the number is invalid or saving fails
      */
-    private void deleteTask(String input) throws KafkaException {
+    private String deleteTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.DELETE.keyword());
         Task deletedTask = tasks.deleteTask(taskNumber);
         taskStorage.save(tasks);
-        ui.showTaskDeleted(deletedTask, tasks.size());
+        return ui.formatTaskDeleted(deletedTask, tasks.size());
     }
 
     /**
@@ -221,22 +223,63 @@ public class Kafka {
      * @param input complete find command
      * @throws KafkaException if no search keyword was supplied
      */
-    private void findTasks(String input) throws KafkaException {
+    private String findTasks(String input) throws KafkaException {
         String keyword = TaskParser.parseFindKeyword(input);
-        ui.showMatchingTasks(tasks.findTasks(keyword));
+        return ui.formatMatchingTasks(tasks.findTasks(keyword));
     }
 
     /**
      * Tells the user that Kafka did not recognize their command.
      */
-    private void showUnknownCommand() {
-        ui.showUnknownCommand();
+    private String handleUnknownCommand() {
+        return ui.formatUnknownCommand();
     }
 
     /**
-     * Generates a response for the user's chat message.
+     * Processes one command and returns its response for any user interface.
+     * Saved tasks are loaded lazily when a GUI submits its first command.
+     *
+     * @param input complete command entered by the user
+     * @return response ready to display to the user
      */
     public String getResponse(String input) {
-        return "Kafka heard: " + input;
+        CommandType command = CommandType.fromInput(input);
+        wasLastResponseError = command == CommandType.UNKNOWN;
+        if (command == CommandType.BYE) {
+            return ui.formatFarewell();
+        }
+
+        try {
+            ensureTasksLoaded();
+            return processCommand(command, input);
+        } catch (KafkaException exception) {
+            wasLastResponseError = true;
+            return ui.formatError(exception.getMessage());
+        }
+    }
+
+    /**
+     * Returns whether the most recently generated response reports an error.
+     *
+     * @return {@code true} if the latest response is an error
+     */
+    public boolean wasLastResponseError() {
+        return wasLastResponseError;
+    }
+
+    /**
+     * Loads saved tasks once before processing GUI commands.
+     *
+     * @throws KafkaException if the saved tasks cannot be loaded
+     */
+    private void ensureTasksLoaded() throws KafkaException {
+        if (!isLoaded) {
+            tasks = taskStorage.load();
+            isLoaded = true;
+        }
+    }
+
+    public String greet() {
+        return ui.formatGreeting();
     }
 }

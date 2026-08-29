@@ -25,8 +25,8 @@ public class MainWindow extends AnchorPane {
 
     private Kafka kafka;
 
-    private Image userImage = new Image(this.getClass().getResourceAsStream("/images/DaUser.png"));
-    private Image kafkaImage = new Image(this.getClass().getResourceAsStream("/images/DaDuke.png"));
+    private Image userImage = new Image(this.getClass().getResourceAsStream("/images/gigachad.png"));
+    private Image kafkaImage = new Image(this.getClass().getResourceAsStream("/images/franzkafka.jpg"));
 
     @FXML
     public void initialize() {
@@ -40,6 +40,7 @@ public class MainWindow extends AnchorPane {
      */
     public void setKafka(Kafka kafka) {
         this.kafka = kafka;
+        greetUponStart(kafka);
     }
 
     /**
@@ -50,11 +51,21 @@ public class MainWindow extends AnchorPane {
     private void handleUserInput() {
         String input = userInput.getText();
         String response = kafka.getResponse(input);
+        DialogBox responseDialog = kafka.wasLastResponseError()
+                ? DialogBox.getErrorDialog(response, kafkaImage)
+                : DialogBox.getKafkaDialog(response, kafkaImage);
         dialogContainer.getChildren().addAll(
                 DialogBox.getUserDialog(input, userImage),
-                DialogBox.getKafkaDialog(response, kafkaImage)
+                responseDialog
         );
         userInput.clear();
+    }
+
+    private void greetUponStart(Kafka kafka) {
+        String greeting = kafka.greet();
+        dialogContainer.getChildren().addAll(
+                DialogBox.getKafkaDialog(greeting, kafkaImage)
+        );
     }
 }
 

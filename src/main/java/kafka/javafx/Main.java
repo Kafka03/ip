@@ -20,7 +20,7 @@ public class Main extends Application {
         mainWindow.setKafka(new Kafka());
 
         stage.setTitle("Kafka");
-        stage.setResizable(false);
+        stage.setResizable(true);
         stage.setMinHeight(220.0);
         stage.setMinWidth(417.0);
         stage.setScene(scene);

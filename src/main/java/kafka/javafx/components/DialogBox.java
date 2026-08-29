@@ -77,5 +77,18 @@ public class DialogBox extends HBox {
         dialogBox.flip();
         return dialogBox;
     }
+
+    /**
+     * Returns a left-aligned dialog box styled as an error response from Kafka.
+     *
+     * @param message error message to display
+     * @param image Kafka image to display
+     * @return left-aligned error dialog box
+     */
+    public static DialogBox getErrorDialog(String message, Image image) {
+        DialogBox dialogBox = getKafkaDialog(message, image);
+        dialogBox.dialog.getStyleClass().add("error-label");
+        return dialogBox;
+    }
 }
 
