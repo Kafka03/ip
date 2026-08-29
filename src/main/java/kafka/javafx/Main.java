@@ -71,7 +71,9 @@ public class Main extends Application {
 
         AnchorPane.setLeftAnchor(userInput, 1.0);
         AnchorPane.setBottomAnchor(userInput, 1.0);
-
+        
+        stage.setMinHeight(220);
+        stage.setMinWidth(417);
         stage.setScene(scene);
         stage.show();
 
