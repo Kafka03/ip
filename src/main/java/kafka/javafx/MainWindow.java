@@ -40,6 +40,7 @@ public class MainWindow extends AnchorPane {
      */
     public void setKafka(Kafka kafka) {
         this.kafka = kafka;
+        greetUponStart(kafka);
     }
 
     /**
@@ -55,6 +56,13 @@ public class MainWindow extends AnchorPane {
                 DialogBox.getKafkaDialog(response, kafkaImage)
         );
         userInput.clear();
+    }
+
+    private void greetUponStart(Kafka kafka) {
+        String greeting = kafka.greet();
+        dialogContainer.getChildren().addAll(
+                DialogBox.getKafkaDialog(greeting, kafkaImage)
+        );
     }
 }
 

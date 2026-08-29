@@ -280,11 +280,20 @@ public class Ui {
      * Prints Kafka's banner and welcome message.
      */
     public void greet() {
-        System.out.println(DIVIDER);
-        System.out.print(BANNER);
-        System.out.println("Heyy skinny legend! (⊃✿ ･ิω･ิ)⊃ I'm Kafka.");
-        System.out.println("What can ur kitten do for you meow? (≧◡≦)");
-        System.out.println(DIVIDER);
+        System.out.println(formatGreeting());
+    }
+
+    /**
+     * Returns Kafka's banner and welcome message.
+     *
+     * @return formatted greeting response
+     */
+    public String formatGreeting() {
+        return DIVIDER + "\n"
+                + BANNER
+                + "Heyy skinny legend! (⊃✿ ･ิω･ิ)⊃ I'm Kafka.\n"
+                + "What can ur kitten do for you meow? (≧◡≦)\n"
+                + DIVIDER;
     }
 
     /**

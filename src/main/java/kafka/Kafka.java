@@ -265,4 +265,8 @@ public class Kafka {
             isLoaded = true;
         }
     }
+
+    public String greet() {
+        return ui.formatGreeting();
+    }
 }
