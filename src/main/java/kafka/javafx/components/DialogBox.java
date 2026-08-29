@@ -1,7 +1,11 @@
 package kafka.javafx.components;
 
+import java.io.IOException;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -13,8 +17,9 @@ import javafx.scene.layout.HBox;
  * Displays a message together with its associated profile image.
  */
 public class DialogBox extends HBox {
-
-    private Label text;
+    @FXML
+    private Label dialog;
+    @FXML
     private ImageView displayPicture;
 
     /**
@@ -22,18 +27,20 @@ public class DialogBox extends HBox {
      *
      * @param message message to display
      * @param image profile image to display beside the message
+     * @throws IllegalStateException if the dialog box layout cannot be loaded
      */
     public DialogBox(String message, Image image) {
-        text = new Label(message);
-        displayPicture = new ImageView(image);
+        FXMLLoader fxmlLoader = new FXMLLoader(DialogBox.class.getResource("/view/DialogBox.fxml"));
+        fxmlLoader.setController(this);
+        fxmlLoader.setRoot(this);
+        try {
+            fxmlLoader.load();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to load the dialog box layout.", exception);
+        }
 
-        // Style the dialog box
-        text.setWrapText(true);
-        displayPicture.setFitWidth(100.0);
-        displayPicture.setFitHeight(100.0);
-        this.setAlignment(Pos.TOP_RIGHT);
-
-        this.getChildren().addAll(text, displayPicture);
+        dialog.setText(message);
+        displayPicture.setImage(image);
     }
 
     /**
@@ -41,6 +48,7 @@ public class DialogBox extends HBox {
      */
     private void flip() {
         this.setAlignment(Pos.TOP_LEFT);
+        dialog.getStyleClass().add("reply-label");
         ObservableList<Node> children = FXCollections.observableArrayList(this.getChildren());
         FXCollections.reverse(children);
         this.getChildren().setAll(children);

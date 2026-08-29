@@ -7,6 +7,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import kafka.Kafka;
+import kafka.javafx.components.DialogBox;
+
 /**
  * Controller for the main GUI.
  */
@@ -30,13 +33,17 @@ public class MainWindow extends AnchorPane {
         scrollPane.vvalueProperty().bind(dialogContainer.heightProperty());
     }
 
-    /** Injects the Duke instance */
-    public void setDuke(kafka k) {
-        kafka = k;
+    /**
+     * Sets the Kafka instance used to process input.
+     *
+     * @param kafka Kafka instance
+     */
+    public void setKafka(Kafka kafka) {
+        this.kafka = kafka;
     }
 
     /**
-     * Creates two dialog boxes, one echoing user input and the other containing Duke's reply and then appends them to
+     * Creates two dialog boxes, one echoing user input and the other containing Kafka's reply and then appends them to
      * the dialog container. Clears the user input after processing.
      */
     @FXML
@@ -45,7 +52,7 @@ public class MainWindow extends AnchorPane {
         String response = kafka.getResponse(input);
         dialogContainer.getChildren().addAll(
                 DialogBox.getUserDialog(input, userImage),
-                DialogBox.getDukeDialog(response, kafkaImage)
+                DialogBox.getKafkaDialog(response, kafkaImage)
         );
         userInput.clear();
     }
