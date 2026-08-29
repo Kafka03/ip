@@ -25,8 +25,8 @@ public class MainWindow extends AnchorPane {
 
     private Kafka kafka;
 
-    private Image userImage = new Image(this.getClass().getResourceAsStream("/images/DaUser.png"));
-    private Image kafkaImage = new Image(this.getClass().getResourceAsStream("/images/DaDuke.png"));
+    private Image userImage = new Image(this.getClass().getResourceAsStream("/images/gigachad.png"));
+    private Image kafkaImage = new Image(this.getClass().getResourceAsStream("/images/franzkafka.jpg"));
 
     @FXML
     public void initialize() {
