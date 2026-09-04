@@ -7,6 +7,7 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import kafka.Kafka;
+import kafka.KafkaResponse;
 import kafka.javafx.components.DialogBox;
 
 /**
@@ -47,10 +48,11 @@ public class MainWindow extends AnchorPane {
     @FXML
     private void handleUserInput() {
         String input = userInput.getText();
-        String response = kafka.getResponse(input);
-        DialogBox responseDialog = kafka.wasLastResponseError()
-                ? DialogBox.getErrorDialog(response, kafkaImage)
-                : DialogBox.getKafkaDialog(response, kafkaImage);
+        KafkaResponse response = kafka.getResponse(input);
+
+        DialogBox responseDialog = response.isError()
+                ? DialogBox.getErrorDialog(response.message(), kafkaImage)
+                : DialogBox.getKafkaDialog(response.message(), kafkaImage);
         dialogContainer.getChildren().addAll(
                 DialogBox.getUserDialog(input, userImage),
                 responseDialog

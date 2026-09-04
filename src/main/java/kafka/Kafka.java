@@ -65,7 +65,8 @@ public class Kafka {
             if (command == CommandType.BYE) {
                 break;
             }
-            ui.showResponse(getResponse(input));
+            KafkaResponse response = getResponse(input);
+            ui.showResponse(response.message());
         }
 
         ui.showResponse(ui.formatFarewell());
@@ -236,25 +237,26 @@ public class Kafka {
     }
 
     /**
-     * Processes one command and returns its response for any user interface.
-     * Saved tasks are loaded lazily when a GUI submits its first command.
+     * Processes one command and returns its display message and error status.
      *
      * @param input complete command entered by the user
-     * @return response ready to display to the user
+     * @return result containing the formatted message and its error status
      */
-    public String getResponse(String input) {
+    public KafkaResponse getResponse(String input) {
         CommandType command = CommandType.fromInput(input);
-        wasLastResponseError = command == CommandType.UNKNOWN;
+
         if (command == CommandType.BYE) {
-            return ui.formatFarewell();
+            return new KafkaResponse(ui.formatFarewell(), false);
         }
 
         try {
             ensureTasksLoaded();
-            return processCommand(command, input);
+            String message = processCommand(command, input);
+            boolean isError = command == CommandType.UNKNOWN;
+            return new KafkaResponse(message, isError);
         } catch (KafkaException exception) {
-            wasLastResponseError = true;
-            return ui.formatError(exception.getMessage());
+            String message = ui.formatError(exception.getMessage());
+            return new KafkaResponse(message, true);
         }
     }
 
