@@ -37,12 +37,12 @@ public class Ui {
     }
 
     /**
-     * Displays every task or an empty-list message.
+     * Displays a response in the console.
      *
-     * @param tasks task list to display
+     * @param response formatted response to display
      */
-    public void showTaskList(TaskList tasks) {
-        System.out.println(formatTaskList(tasks));
+    public void showResponse(String response) {
+        System.out.println(response);
     }
 
     /**
@@ -70,15 +70,6 @@ public class Ui {
     }
 
     /**
-     * Displays tasks returned by a keyword search, numbered from one.
-     *
-     * @param matchingTasks tasks whose displayed text contains the keyword
-     */
-    public void showMatchingTasks(List<Task> matchingTasks) {
-        System.out.println(formatMatchingTasks(matchingTasks));
-    }
-
-    /**
      * Returns matching tasks with one-based result numbers.
      *
      * @param matchingTasks tasks whose displayed text contains the keyword
@@ -99,16 +90,6 @@ public class Ui {
     }
 
     /**
-     * Confirms that a task was added and displays the updated count.
-     *
-     * @param task task that joined the list
-     * @param taskCount number of tasks now stored
-     */
-    public void showTaskAdded(Task task, int taskCount) {
-        System.out.println(formatTaskAdded(task, taskCount));
-    }
-
-    /**
      * Returns confirmation that a task was added.
      *
      * @param task task that joined the list
@@ -126,15 +107,6 @@ public class Ui {
     }
 
     /**
-     * Confirms that a task was marked as completed.
-     *
-     * @param task updated display text for the completed task
-     */
-    public void showTaskMarked(String task) {
-        System.out.println(formatTaskMarked(task));
-    }
-
-    /**
      * Returns confirmation that a task was marked as completed.
      *
      * @param task updated display text for the completed task
@@ -148,15 +120,6 @@ public class Ui {
     }
 
     /**
-     * Confirms that a task was marked as incomplete.
-     *
-     * @param task updated display text for the incomplete task
-     */
-    public void showTaskUnmarked(String task) {
-        System.out.println(formatTaskUnmarked(task));
-    }
-
-    /**
      * Returns confirmation that a task was marked as incomplete.
      *
      * @param task updated display text for the incomplete task
@@ -167,16 +130,6 @@ public class Ui {
                 + "Awww issok my g, I've marked this task as not done yet:\n"
                 + "  " + task + "\n"
                 + DIVIDER;
-    }
-
-    /**
-     * Confirms that a task was deleted and displays the updated count.
-     *
-     * @param task task removed from the list
-     * @param taskCount number of tasks still stored
-     */
-    public void showTaskDeleted(Task task, int taskCount) {
-        System.out.println(formatTaskDeleted(task, taskCount));
     }
 
     /**
@@ -196,28 +149,12 @@ public class Ui {
     }
 
     /**
-     * Informs the user that the command is not recognized.
-     */
-    public void showUnknownCommand() {
-        System.out.println(formatUnknownCommand());
-    }
-
-    /**
      * Returns the response for an unrecognized command.
      *
      * @return formatted unknown-command response
      */
     public String formatUnknownCommand() {
         return DIVIDER + "\n" + UNKNOWN_COMMAND_MESSAGE + "\n" + DIVIDER;
-    }
-
-    /**
-     * Displays an expected error without ending the chatbot session.
-     *
-     * @param message user-facing explanation of the problem
-     */
-    public void showError(String message) {
-        System.out.println(formatError(message));
     }
 
     /**
@@ -258,30 +195,26 @@ public class Ui {
     }
 
     /**
-     * Directs the user to the file that needs to be inspected or repaired.
+     * Returns directions to the file that needs to be inspected or repaired.
      *
      * @param filePath task file the user should inspect
+     * @return formatted storage-file directions
      */
-    public void showStorageFileLocation(Path filePath) {
-        System.out.println("Your task data was not changed.");
-        System.out.println("Please inspect or repair this file before restarting Kafka:");
-        System.out.println("  " + filePath);
-        System.out.println(DIVIDER);
+    public String formatStorageFileLocation(Path filePath) {
+        return "Your task data was not changed.\n"
+                + "Please inspect or repair this file before restarting Kafka:\n"
+                + "  " + filePath + "\n"
+                + DIVIDER;
     }
 
     /**
-     * Confirms that the user-approved corrupted file was replaced.
+     * Returns confirmation that the user-approved corrupted file was replaced.
+     *
+     * @return formatted storage-overwrite confirmation
      */
-    public void showStorageOverwritten() {
-        System.out.println("The corrupted task file was replaced. Starting with an empty list.");
-        System.out.println(DIVIDER);
-    }
-
-    /**
-     * Prints Kafka's banner and welcome message.
-     */
-    public void greet() {
-        System.out.println(formatGreeting());
+    public String formatStorageOverwritten() {
+        return "The corrupted task file was replaced. Starting with an empty list.\n"
+                + DIVIDER;
     }
 
     /**
@@ -295,13 +228,6 @@ public class Ui {
                 + "Heyy skinny legend! (⊃✿ ･ิω･ิ)⊃ I'm Kafka.\n"
                 + "What can ur kitten do for you meow? (≧◡≦)\n"
                 + DIVIDER;
-    }
-
-    /**
-     * Prints Kafka's farewell message.
-     */
-    public void sayBye() {
-        System.out.println(formatFarewell());
     }
 
     /**

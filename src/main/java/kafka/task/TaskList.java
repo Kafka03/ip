@@ -10,7 +10,6 @@ import kafka.exception.KafkaException;
  * Stores and manages tasks in list order.
  */
 public class TaskList {
-    private static final String DIVIDER = "_".repeat(60);
     private final List<Task> taskList;
 
     /**
@@ -133,13 +132,4 @@ public class TaskList {
         return taskNumber - 1;
     }
 
-    /**
-     * Prints every task with its one-based list number.
-     */
-    public void showTasks() {
-        for (int i = 0; i < taskList.size(); i++) {
-            System.out.println((i + 1) + "." + taskList.get(i).display());
-        }
-        System.out.println(DIVIDER);
-    }
 }

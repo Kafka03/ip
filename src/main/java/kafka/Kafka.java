@@ -52,7 +52,7 @@ public class Kafka {
      * Loads saved tasks and processes commands until the user says bye.
      */
     void run() {
-        ui.greet();
+        ui.showResponse(ui.formatGreeting());
 
         if (!loadTasks()) {
             ui.close();
@@ -65,10 +65,10 @@ public class Kafka {
             if (command == CommandType.BYE) {
                 break;
             }
-            System.out.println(getResponse(input));
+            ui.showResponse(getResponse(input));
         }
 
-        ui.sayBye();
+        ui.showResponse(ui.formatFarewell());
         ui.close();
     }
 
@@ -83,25 +83,25 @@ public class Kafka {
             isLoaded = true;
             return true;
         } catch (CorruptedTaskDataException exception) {
-            ui.showError(exception.getMessage());
+            ui.showResponse(ui.formatError(exception.getMessage()));
             if (!ui.confirmStorageOverwrite(taskStorage.getFilePath())) {
-                ui.showStorageFileLocation(taskStorage.getFilePath());
+                ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
                 return false;
             }
 
             try {
                 taskStorage.save(tasks);
                 isLoaded = true;
-                ui.showStorageOverwritten();
+                ui.showResponse(ui.formatStorageOverwritten());
                 return true;
             } catch (KafkaException saveException) {
-                ui.showError(saveException.getMessage());
-                ui.showStorageFileLocation(taskStorage.getFilePath());
+                ui.showResponse(ui.formatError(saveException.getMessage()));
+                ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
                 return false;
             }
         } catch (KafkaException exception) {
-            ui.showError(exception.getMessage());
-            ui.showStorageFileLocation(taskStorage.getFilePath());
+            ui.showResponse(ui.formatError(exception.getMessage()));
+            ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
             return false;
         }
     }
