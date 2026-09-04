@@ -185,9 +185,9 @@ public class Kafka {
      */
     private String markTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.keyword());
-        String markedTask = tasks.markTask(taskNumber);
+        Task markedTask = tasks.markTask(taskNumber);
         taskStorage.save(tasks);
-        return ui.formatTaskMarked(markedTask);
+        return ui.formatTaskMarked(markedTask.display());
     }
 
     /**
@@ -198,9 +198,9 @@ public class Kafka {
      */
     private String unmarkTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.keyword());
-        String unmarkedTask = tasks.unmarkTask(taskNumber);
+        Task unmarkedTask = tasks.unmarkTask(taskNumber);
         taskStorage.save(tasks);
-        return ui.formatTaskUnmarked(unmarkedTask);
+        return ui.formatTaskUnmarked(unmarkedTask.display());
     }
 
     /**
@@ -273,9 +273,11 @@ public class Kafka {
      * @throws KafkaException if the saved tasks cannot be loaded
      */
     private void ensureTasksLoaded() throws KafkaException {
-        if (!isLoaded) {
-            tasks = taskStorage.load();
-            isLoaded = true;
+        if (isLoaded) {
+            return;
+        }
+        if (!loadTasks()) {
+            throw new KafkaException("Saved tasks could not be loaded.");
         }
     }
 

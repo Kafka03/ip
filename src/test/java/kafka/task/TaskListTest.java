@@ -58,8 +58,11 @@ class TaskListTest {
         tasks.addTask(new Todo("read book"));
         tasks.addTask(new Todo("return book"));
 
-        assertEquals("[T][X] return book", tasks.markTask(2));
-        assertEquals("[T][ ] return book", tasks.unmarkTask(2));
+        Task markedTask = tasks.markTask(2);
+        assertEquals("[T][X] return book", markedTask.display());
+
+        Task unmarkedTask = tasks.unmarkTask(2);
+        assertEquals("[T][ ] return book", unmarkedTask.display());
     }
 
     @Test
@@ -83,7 +86,8 @@ class TaskListTest {
 
         assertEquals("[D][ ] second (by: Sunday)", deletedTask.display());
         assertEquals(2, tasks.size());
-        assertEquals("[E][X] third (from: Monday to: Tuesday)", tasks.markTask(2));
+        Task markedTask = tasks.markTask(2);
+        assertEquals("[E][X] third (from: Monday to: Tuesday)", markedTask.display());
     }
 
     @Test

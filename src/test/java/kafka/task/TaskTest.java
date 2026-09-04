@@ -13,8 +13,10 @@ class TaskTest {
         Task task = new Todo("read book");
 
         assertEquals("[T][ ] read book", task.display());
-        assertEquals("[T][X] read book", task.mark());
-        assertEquals("[T][ ] read book", task.unmark());
+        task.mark();
+        assertEquals("[T][X] read book", task.display());
+        task.unmark();
+        assertEquals("[T][ ] read book", task.display());
     }
 
     @Test

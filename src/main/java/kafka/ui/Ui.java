@@ -52,17 +52,18 @@ public class Ui {
      * @return formatted task-list response
      */
     public String formatTaskList(TaskList tasks) {
+        List<Task> displayedTasks = tasks.getTasks();
         StringBuilder response = new StringBuilder(DIVIDER)
                 .append('\n')
                 .append("Here's your to-dos, my fav hustler >////<")
                 .append('\n');
-        if (tasks.isEmpty()) {
+        if (displayedTasks.isEmpty()) {
             response.append('\n').append("You have no tasks lined up king >0<").append('\n');
         }
-        for (int i = 0; i < tasks.size(); i++) {
+        for (int i = 0; i < displayedTasks.size(); i++) {
             response.append(i + 1)
                     .append('.')
-                    .append(tasks.getTasks().get(i).display())
+                    .append(displayedTasks.get(i).display())
                     .append('\n');
         }
         return response.append(DIVIDER).toString();

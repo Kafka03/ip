@@ -86,22 +86,26 @@ public class TaskList {
      * Marks the task at the user-facing one-based position as completed.
      *
      * @param taskNumber one-based number of the task to mark
-     * @return updated display text for the marked task
+     * @return task that was marked
      * @throws KafkaException if no task has that number
      */
-    public String markTask(int taskNumber) throws KafkaException {
-        return getTask(taskNumber).mark();
+    public Task markTask(int taskNumber) throws KafkaException {
+        Task task = getTask(taskNumber);
+        task.mark();
+        return task;
     }
 
     /**
      * Marks the task at the user-facing one-based position as incomplete.
      *
      * @param taskNumber one-based number of the task to unmark
-     * @return updated display text for the unmarked task
+     * @return task that was unmarked
      * @throws KafkaException if no task has that number
      */
-    public String unmarkTask(int taskNumber) throws KafkaException {
-        return getTask(taskNumber).unmark();
+    public Task unmarkTask(int taskNumber) throws KafkaException {
+        Task task = getTask(taskNumber);
+        task.unmark();
+        return task;
     }
 
     /**

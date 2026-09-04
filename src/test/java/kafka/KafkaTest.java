@@ -205,6 +205,20 @@ class KafkaTest {
         assertTrue(output.contains("Bye babe~"));
     }
 
+    @Test
+    void getResponseUsesCorruptedFileRecovery() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Files.writeString(dataFile, "invalid saved task");
+        System.setIn(new ByteArrayInputStream("yes\n".getBytes(StandardCharsets.UTF_8)));
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+
+        String response = kafka.getResponse("list");
+
+        assertEquals("", Files.readString(dataFile));
+        assertTrue(response.contains("You have no tasks lined up"));
+        assertFalse(kafka.wasLastResponseError());
+    }
+
     @ParameterizedTest
     @MethodSource("invalidInputsAndExpectedErrors")
     void invalidInputShowsOnlyItsMatchingError(String invalidInput, String expectedError) {

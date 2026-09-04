@@ -19,22 +19,16 @@ public abstract class Task {
 
     /**
      * Marks this task as completed.
-     *
-     * @return display text showing the completed task
      */
-    public String mark() {
+    public void mark() {
         isDone = true;
-        return display();
     }
 
     /**
      * Marks this task as incomplete.
-     *
-     * @return display text showing the incomplete task
      */
-    public String unmark() {
+    public void unmark() {
         isDone = false;
-        return display();
     }
 
     /**
