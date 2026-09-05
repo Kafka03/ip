@@ -180,6 +180,17 @@ class KafkaTest {
     }
 
     @Test
+    void renameChangesTaskNameAndPersistsIt() {
+        String renameOutput = runKafka("todo read book\nrename 1 read novel\nbye\n");
+
+        assertTrue(renameOutput.contains("[T][ ] read book"));
+        assertTrue(renameOutput.contains("[T][ ] read novel"));
+
+        String listOutput = runKafka("list\nbye\n");
+        assertTrue(listOutput.contains("1.[T][ ] read novel"));
+    }
+
+    @Test
     void rejectingCorruptedFileOverwritePreservesFileAndShowsLocation() throws IOException {
         Path dataFile = temporaryDirectory.resolve("tasks.txt");
         Files.writeString(dataFile, "invalid saved task");

@@ -75,4 +75,18 @@ class TaskListTest {
         assertEquals("[T][ ] read book", matches.get(0).display());
         assertEquals("[D][ ] return BOOK (by: June 6th)", matches.get(1).display());
     }
+
+    @Test
+    void renameTaskReturnsSnapshotsAndPreservesOtherDetails() throws KafkaException {
+        TaskList tasks = new TaskList();
+        tasks.addTask(new Deadline("submit draft", "Sunday"));
+        tasks.markTask(1);
+
+        RenameResult result = tasks.renameTask(1, "submit final report");
+
+        assertEquals("[D][X] submit draft (by: Sunday)", result.oldDisplay());
+        assertEquals("[D][X] submit final report (by: Sunday)", result.newDisplay());
+        assertEquals("D | 1 | submit final report | Sunday",
+                tasks.getTasks().get(0).toDataString());
+    }
 }

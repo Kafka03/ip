@@ -112,13 +112,14 @@ public class TaskList {
      *
      * @param taskNumber one-based task number
      * @param newName replacement task name
-     * @return renamed task
+     * @return display snapshots from before and after the rename
      * @throws KafkaException if no task has that number
      */
-    public Task renameTask(int taskNumber, String newName) throws KafkaException {
+    public RenameResult renameTask(int taskNumber, String newName) throws KafkaException {
         Task task = getTask(taskNumber);
+        String oldDisplay = task.display();
         task.rename(newName);
-        return task;
+        return new RenameResult(oldDisplay, task.display());
     }
 
     /**

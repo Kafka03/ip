@@ -3,8 +3,10 @@ package kafka;
 import kafka.command.CommandType;
 import kafka.exception.CorruptedTaskDataException;
 import kafka.exception.KafkaException;
+import kafka.parser.RenameRequest;
 import kafka.parser.TaskParser;
 import kafka.storage.TaskStorage;
+import kafka.task.RenameResult;
 import kafka.task.Task;
 import kafka.task.TaskList;
 import kafka.ui.Ui;
@@ -126,6 +128,7 @@ public class Kafka {
             case MARK -> markTask(input);
             case UNMARK -> unmarkTask(input);
             case DELETE -> deleteTask(input);
+            case RENAME -> renameTask(input);
             case FIND -> findTasks(input);
             case UNKNOWN, BYE -> handleUnknownCommand();
             default -> handleUnknownCommand();
@@ -218,6 +221,19 @@ public class Kafka {
         Task deletedTask = tasks.deleteTask(taskNumber);
         taskStorage.save(tasks);
         return ui.formatTaskDeleted(deletedTask, tasks.size());
+    }
+
+    /**
+     * Renames the task number supplied by the user.
+     *
+     * @param input complete rename command
+     * @throws KafkaException if the arguments are invalid or saving fails
+     */
+    private String renameTask(String input) throws KafkaException {
+        RenameRequest request = TaskParser.parseRename(input);
+        RenameResult result = tasks.renameTask(request.taskNumber(), request.newName());
+        taskStorage.save(tasks);
+        return ui.formatTaskRenamed(result.oldDisplay(), result.newDisplay());
     }
 
     /**

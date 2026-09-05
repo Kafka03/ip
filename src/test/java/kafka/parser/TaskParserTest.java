@@ -159,4 +159,19 @@ class TaskParserTest {
         assertThrows(ParserException.class, () ->
                 TaskParser.parseTaskNumber("mark 0", "mark"));
     }
+
+    @Test
+    void parseRenameReturnsTaskNumberAndNewName() throws ParserException {
+        RenameRequest request = TaskParser.parseRename("rename 2 buy groceries");
+
+        assertEquals(2, request.taskNumber());
+        assertEquals("buy groceries", request.newName());
+    }
+
+    @Test
+    void parseRenameRejectsMissingOrUnsafeName() {
+        assertThrows(ParserException.class, () -> TaskParser.parseRename("rename 2"));
+        assertThrows(ParserException.class, () -> TaskParser.parseRename("rename two books"));
+        assertThrows(ParserException.class, () -> TaskParser.parseRename("rename 2 buy | cook"));
+    }
 }

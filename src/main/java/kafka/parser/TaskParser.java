@@ -288,6 +288,37 @@ public final class TaskParser {
      */
     public static int parseTaskNumber(String input, String command) throws ParserException {
         String numberText = input.substring(command.length()).trim();
+        return parsePositiveTaskNumber(numberText);
+    }
+
+    /**
+     * Parses the task number and new name from a rename command.
+     *
+     * @param input complete rename command entered by the user
+     * @return task number and replacement name
+     * @throws ParserException if the number or replacement name is invalid
+     */
+    public static RenameRequest parseRename(String input) throws ParserException {
+        String arguments = input.substring(CommandType.RENAME.keyword().length()).trim();
+        String[] parts = arguments.split("\\s+", 2);
+        if (parts.length < 2 || parts[1].isBlank()) {
+            throw new ParserException("Please provide a task number and a new name.");
+        }
+
+        int taskNumber = parsePositiveTaskNumber(parts[0]);
+        String newName = parts[1].trim();
+        rejectStorageDelimiter(newName);
+        return new RenameRequest(taskNumber, newName);
+    }
+
+    /**
+     * Parses a positive task number from its text representation.
+     *
+     * @param numberText task number without its command keyword
+     * @return positive task number
+     * @throws ParserException if the text is not a positive whole number
+     */
+    private static int parsePositiveTaskNumber(String numberText) throws ParserException {
         try {
             int taskNumber = Integer.parseInt(numberText);
             if (taskNumber < 1) {

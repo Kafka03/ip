@@ -14,7 +14,7 @@ public class Ui {
     private static final String DIVIDER = "_".repeat(60);
     private static final String UNKNOWN_COMMAND_MESSAGE =
             "Sowwy I don't know that command... pwease try todo, deadline, event, "
-            + "list, find, mark, unmark, delete, or bye.";
+            + "list, find, mark, unmark, delete, rename, or bye.";
     private static final String BANNER = "        /\\_/\\\n"
             + "       ( o.o )     K A F K A\n"
             + "        > 0 <        \n";
@@ -145,6 +145,22 @@ public class Ui {
                 + "Aight. I've yeeted this task:\n"
                 + "  " + task.display() + "\n"
                 + "Now you have " + taskCount + " " + taskWord + " in the list.\n"
+                + DIVIDER;
+    }
+
+    /**
+     * Returns confirmation that a task was renamed.
+     *
+     * @param oldDisplay task display before renaming
+     * @param newDisplay task display after renaming
+     * @return formatted task-renamed response
+     */
+    public String formatTaskRenamed(String oldDisplay, String newDisplay) {
+        return DIVIDER + "\n"
+                + "Gotcha I've renamed this task 0w0:\n"
+                + "  " + oldDisplay + "\n"
+                + "to:\n"
+                + "  " + newDisplay + "\n"
                 + DIVIDER;
     }
 
