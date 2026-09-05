@@ -16,6 +16,10 @@ public enum CommandType {
     UNMARK("unmark", true),
     /** Removes a numbered task from the list. */
     DELETE("delete", true),
+    /** Replaces the name of a numbered task. */
+    RENAME("rename", true),
+    /** Reschedules a numbered deadline or event. */
+    SNOOZE("snooze", true),
     /** Finds tasks containing a supplied keyword. */
     FIND("find", true),
     /** Displays all tasks in list order. */

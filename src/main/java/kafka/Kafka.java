@@ -3,8 +3,14 @@ package kafka;
 import kafka.command.CommandType;
 import kafka.exception.CorruptedTaskDataException;
 import kafka.exception.KafkaException;
+import kafka.parser.RenameRequest;
+import kafka.parser.SnoozeDeadlineResult;
+import kafka.parser.SnoozeEventResult;
+import kafka.parser.SnoozeRequest;
 import kafka.parser.TaskParser;
 import kafka.storage.TaskStorage;
+import kafka.task.RenameResult;
+import kafka.task.SnoozeResult;
 import kafka.task.Task;
 import kafka.task.TaskList;
 import kafka.ui.Ui;
@@ -13,6 +19,11 @@ import kafka.ui.Ui;
  * Coordinates the user interface, command parser, task storage, and task list.
  */
 public class Kafka {
+    private static final String LOAD_TASKS_ERROR =
+            "Saved tasks could not be loaded.";
+    private static final String UNSUPPORTED_SNOOZE_ERROR =
+            "This snooze request is not supported.";
+
     private final Ui ui;
     private final TaskStorage taskStorage;
     private TaskList tasks;
@@ -126,6 +137,8 @@ public class Kafka {
             case MARK -> markTask(input);
             case UNMARK -> unmarkTask(input);
             case DELETE -> deleteTask(input);
+            case RENAME -> renameTask(input);
+            case SNOOZE -> snoozeTask(input);
             case FIND -> findTasks(input);
             case UNKNOWN, BYE -> handleUnknownCommand();
             default -> handleUnknownCommand();
@@ -221,6 +234,50 @@ public class Kafka {
     }
 
     /**
+     * Renames the task number supplied by the user.
+     *
+     * @param input complete rename command
+     * @throws KafkaException if the arguments are invalid or saving fails
+     */
+    private String renameTask(String input) throws KafkaException {
+        RenameRequest request = TaskParser.parseRename(input);
+        RenameResult result = tasks.renameTask(request.taskNumber(), request.newName());
+        taskStorage.save(tasks);
+        return ui.formatTaskRenamed(result.oldDisplay(), result.newDisplay());
+    }
+
+    /**
+     * Reschedules the deadline or event selected by the user.
+     *
+     * @param input complete snooze command
+     * @throws KafkaException if the arguments, task type, or save operation is invalid
+     */
+    private String snoozeTask(String input) throws KafkaException {
+        SnoozeRequest request = TaskParser.parseSnooze(input);
+        SnoozeResult result = applySnooze(request);
+        taskStorage.save(tasks);
+        return ui.formatTaskSnoozed(result.oldDisplay(), result.newDisplay());
+    }
+
+    /**
+     * Applies a parsed deadline or event schedule change.
+     *
+     * @param request parsed snooze request
+     * @return display snapshots from before and after rescheduling
+     * @throws KafkaException if the selected task has the wrong type
+     */
+    private SnoozeResult applySnooze(SnoozeRequest request) throws KafkaException {
+        if (request instanceof SnoozeDeadlineResult deadlineResult) {
+            return tasks.snoozeDeadline(deadlineResult.taskNumber(), deadlineResult.newBy());
+        }
+        if (request instanceof SnoozeEventResult eventResult) {
+            return tasks.snoozeEvent(
+                    eventResult.taskNumber(), eventResult.newFrom(), eventResult.newTo());
+        }
+        throw new KafkaException(UNSUPPORTED_SNOOZE_ERROR);
+    }
+
+    /**
      * Finds and displays tasks containing the keyword supplied by the user.
      * Searching does not change the task list, so no save is needed.
      *
@@ -282,7 +339,7 @@ public class Kafka {
             return;
         }
         if (!loadTasks()) {
-            throw new KafkaException("Saved tasks could not be loaded.");
+            throw new KafkaException(LOAD_TASKS_ERROR);
         }
     }
 

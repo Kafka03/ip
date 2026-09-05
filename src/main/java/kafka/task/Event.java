@@ -5,8 +5,8 @@ package kafka.task;
  * Both values are stored as display-ready text.
  */
 public class Event extends Task {
-    private final String from;
-    private final String to;
+    private String from;
+    private String to;
 
     /**
      * Creates an unfinished event.
@@ -39,5 +39,13 @@ public class Event extends Task {
     @Override
     public String toDataString() {
         return super.toDataString("E") + " | " + from + " | " + to;
+    }
+
+    void rescheduleFrom(String newFrom) {
+        from = newFrom;
+    }
+
+    void rescheduleTo(String newTo) {
+        to = newTo;
     }
 }

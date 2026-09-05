@@ -5,7 +5,7 @@ package kafka.task;
  * The deadline is stored as display-ready text.
  */
 public class Deadline extends Task {
-    private final String by;
+    private String by;
 
     /**
      * Creates an unfinished deadline.
@@ -36,5 +36,9 @@ public class Deadline extends Task {
     @Override
     public String toDataString() {
         return super.toDataString("D") + " | " + by;
+    }
+
+    void reschedule(String newBy) {
+        by = newBy;
     }
 }

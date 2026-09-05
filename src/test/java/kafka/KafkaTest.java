@@ -155,11 +155,11 @@ class KafkaTest {
         TaskStorage taskStorage = new TaskStorage(temporaryDirectory.resolve("tasks.txt"));
         Kafka kafka = new Kafka(taskStorage);
 
-        kafka.getResponse("todo");
-        assertTrue(kafka.wasLastResponseError());
+        KafkaResponse errorResponse = kafka.getResponse("todo");
+        assertTrue(errorResponse.isError());
 
-        kafka.getResponse("todo read book");
-        assertFalse(kafka.wasLastResponseError());
+        KafkaResponse successResponse = kafka.getResponse("todo read book");
+        assertFalse(successResponse.isError());
     }
 
     @Test
@@ -177,6 +177,17 @@ class KafkaTest {
         String output = runKafka("list\nbye\n");
 
         assertTrue(output.contains("1.[T][X] remember me"));
+    }
+
+    @Test
+    void renameChangesTaskNameAndPersistsIt() {
+        String renameOutput = runKafka("todo read book\nrename 1 read novel\nbye\n");
+
+        assertTrue(renameOutput.contains("[T][ ] read book"));
+        assertTrue(renameOutput.contains("[T][ ] read novel"));
+
+        String listOutput = runKafka("list\nbye\n");
+        assertTrue(listOutput.contains("1.[T][ ] read novel"));
     }
 
     @Test
@@ -212,11 +223,11 @@ class KafkaTest {
         System.setIn(new ByteArrayInputStream("yes\n".getBytes(StandardCharsets.UTF_8)));
         Kafka kafka = new Kafka(new TaskStorage(dataFile));
 
-        String response = kafka.getResponse("list");
+        KafkaResponse response = kafka.getResponse("list");
 
         assertEquals("", Files.readString(dataFile));
-        assertTrue(response.contains("You have no tasks lined up"));
-        assertFalse(kafka.wasLastResponseError());
+        assertTrue(response.message().contains("You have no tasks lined up"));
+        assertFalse(response.isError());
     }
 
     @ParameterizedTest

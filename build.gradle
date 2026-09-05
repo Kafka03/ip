@@ -69,3 +69,5 @@ shadowJar {
 checkstyle {
     toolVersion = '11.0.0'
 }
+
+

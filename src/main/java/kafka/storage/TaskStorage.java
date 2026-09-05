@@ -26,6 +26,10 @@ public class TaskStorage {
     private static final String EVENT_TYPE = "E";
     private static final String DONE_STATUS = "1";
     private static final String NOT_DONE_STATUS = "0";
+    private static final String READ_ERROR_PREFIX = "Could not read tasks from ";
+    private static final String SAVE_ERROR_PREFIX = "Could not save tasks to ";
+    private static final String MALFORMED_DATA_ERROR_PREFIX =
+            "Malformed task data on line ";
 
     private final Path filePath;
 
@@ -78,7 +82,7 @@ public class TaskStorage {
             }
             return tasks;
         } catch (IOException exception) {
-            throw new KafkaException("Could not read tasks from " + filePath, exception);
+            throw new KafkaException(READ_ERROR_PREFIX + filePath, exception);
         }
     }
 
@@ -101,7 +105,7 @@ public class TaskStorage {
                     .toList();
             Files.write(filePath, lines, StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            throw new KafkaException("Could not save tasks to " + filePath, exception);
+            throw new KafkaException(SAVE_ERROR_PREFIX + filePath, exception);
         }
     }
 
@@ -131,7 +135,7 @@ public class TaskStorage {
      * @throws CorruptedTaskDataException if required common fields are missing
      */
     private String[] parseFields(String line, int lineNumber)
-      throws CorruptedTaskDataException {
+            throws CorruptedTaskDataException {
         String[] fields = line.split("\\s*\\|\\s*", -1);
         if (fields.length < 3) {
             throw malformedLine(lineNumber);
@@ -230,6 +234,6 @@ public class TaskStorage {
      */
     private CorruptedTaskDataException malformedLine(int lineNumber) {
         return new CorruptedTaskDataException(
-                "Malformed task data on line " + lineNumber + " of " + filePath);
+                MALFORMED_DATA_ERROR_PREFIX + lineNumber + " of " + filePath);
     }
 }
