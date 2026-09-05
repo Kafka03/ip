@@ -114,6 +114,8 @@ public class TaskStorage {
      * @throws KafkaException if the record cannot be trusted
      */
     private Task parseTask(String line, int lineNumber) throws KafkaException {
+        assert lineNumber >= 1 : "Storage line numbers must be one-based";
+        assert !line.isBlank() : "Blank storage lines must be skipped before parsing";
         String[] fields = line.split("\\s*\\|\\s*", -1);
         if (fields.length < 3) {
             throw malformedLine(lineNumber);
