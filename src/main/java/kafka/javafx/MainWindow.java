@@ -47,6 +47,7 @@ public class MainWindow extends AnchorPane {
      */
     @FXML
     private void handleUserInput() {
+        assert kafka != null : "Kafka must be set before processing user input";
         String input = userInput.getText();
         KafkaResponse response = kafka.getResponse(input);
 

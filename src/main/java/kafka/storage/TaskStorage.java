@@ -114,6 +114,8 @@ public class TaskStorage {
      * @throws CorruptedTaskDataException if the record cannot be trusted
      */
     private Task parseTask(String line, int lineNumber) throws CorruptedTaskDataException {
+        assert lineNumber >= 1 : "Storage line numbers must be one-based";
+        assert !line.isBlank() : "Blank storage lines must be skipped before parsing";
         String[] fields = parseFields(line, lineNumber);
         Task task = createTask(fields, lineNumber);
         restoreStatus(task, fields[1], lineNumber);
@@ -129,7 +131,7 @@ public class TaskStorage {
      * @throws CorruptedTaskDataException if required common fields are missing
      */
     private String[] parseFields(String line, int lineNumber)
-            throws CorruptedTaskDataException {
+      throws CorruptedTaskDataException {
         String[] fields = line.split("\\s*\\|\\s*", -1);
         if (fields.length < 3) {
             throw malformedLine(lineNumber);
