@@ -3,6 +3,7 @@ package kafka.task;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import kafka.exception.KafkaException;
 
@@ -10,6 +11,15 @@ import kafka.exception.KafkaException;
  * Stores and manages tasks in list order.
  */
 public class TaskList {
+    private static final String TASK_NOT_FOUND_ERROR =
+            "There is no task with that number";
+    private static final String NOT_DEADLINE_ERROR =
+            "Only a deadline can be snoozed with /by.";
+    private static final String NOT_EVENT_ERROR =
+            "Only an event can be snoozed with /from or /to.";
+    private static final String EMPTY_EVENT_SNOOZE_ASSERTION =
+            "A parsed event snooze must change at least one endpoint";
+
     private final List<Task> taskList;
 
     /**
@@ -123,6 +133,51 @@ public class TaskList {
     }
 
     /**
+     * Reschedules the deadline at the specified one-based position.
+     *
+     * @param taskNumber one-based task number
+     * @param newBy replacement deadline
+     * @return display snapshots from before and after rescheduling
+     * @throws KafkaException if the selected task is absent or is not a deadline
+     */
+    public SnoozeResult snoozeDeadline(int taskNumber, String newBy)
+            throws KafkaException {
+        Task task = getTask(taskNumber);
+        if (!(task instanceof Deadline deadline)) {
+            throw new KafkaException(NOT_DEADLINE_ERROR);
+        }
+
+        String oldDisplay = deadline.display();
+        deadline.reschedule(newBy);
+        return new SnoozeResult(oldDisplay, deadline.display());
+    }
+
+    /**
+     * Reschedules one or both endpoints of the event at the specified position.
+     *
+     * @param taskNumber one-based task number
+     * @param newFrom replacement start, if supplied
+     * @param newTo replacement end, if supplied
+     * @return display snapshots from before and after rescheduling
+     * @throws KafkaException if the selected task is absent or is not an event
+     */
+    public SnoozeResult snoozeEvent(int taskNumber, Optional<String> newFrom,
+            Optional<String> newTo) throws KafkaException {
+        assert newFrom.isPresent() || newTo.isPresent()
+                : EMPTY_EVENT_SNOOZE_ASSERTION;
+
+        Task task = getTask(taskNumber);
+        if (!(task instanceof Event event)) {
+            throw new KafkaException(NOT_EVENT_ERROR);
+        }
+
+        String oldDisplay = event.display();
+        newFrom.ifPresent(event::rescheduleFrom);
+        newTo.ifPresent(event::rescheduleTo);
+        return new SnoozeResult(oldDisplay, event.display());
+    }
+
+    /**
      * Finds the task at a user-facing one-based position.
      *
      * @param taskNumber one-based number of the requested task
@@ -142,7 +197,7 @@ public class TaskList {
      */
     private int getTaskIndex(int taskNumber) throws KafkaException {
         if (taskNumber < 1 || taskNumber > taskList.size()) {
-            throw new KafkaException("There is no task with that number");
+            throw new KafkaException(TASK_NOT_FOUND_ERROR);
         }
         return taskNumber - 1;
     }

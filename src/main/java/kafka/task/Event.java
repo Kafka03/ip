@@ -21,11 +21,6 @@ public class Event extends Task {
         this.to = to;
     }
 
-    void reschedule(String newFrom, String newTo) {
-        from = newFrom;
-        to = newTo;
-    }
-
     /**
      * Adds the event marker and time range to the common task display.
      *

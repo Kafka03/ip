@@ -17,6 +17,9 @@ import javafx.scene.layout.HBox;
  * Displays a message together with its associated profile image.
  */
 public class DialogBox extends HBox {
+    private static final String LAYOUT_LOAD_ERROR =
+            "Unable to load the dialog box layout.";
+
     @FXML
     private Label dialog;
     @FXML
@@ -36,7 +39,7 @@ public class DialogBox extends HBox {
         try {
             fxmlLoader.load();
         } catch (IOException exception) {
-            throw new IllegalStateException("Unable to load the dialog box layout.", exception);
+            throw new IllegalStateException(LAYOUT_LOAD_ERROR, exception);
         }
 
         dialog.setText(message);

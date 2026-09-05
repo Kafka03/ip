@@ -14,7 +14,7 @@ public class Ui {
     private static final String DIVIDER = "_".repeat(60);
     private static final String UNKNOWN_COMMAND_MESSAGE =
             "Sowwy I don't know that command... pwease try todo, deadline, event, "
-            + "list, find, mark, unmark, delete, rename, or bye.";
+            + "list, find, mark, unmark, delete, rename, snooze, or bye.";
     private static final String BANNER = "        /\\_/\\\n"
             + "       ( o.o )     K A F K A\n"
             + "        > 0 <        \n";
@@ -158,6 +158,22 @@ public class Ui {
     public String formatTaskRenamed(String oldDisplay, String newDisplay) {
         return DIVIDER + "\n"
                 + "Gotcha I've renamed this task 0w0:\n"
+                + "  " + oldDisplay + "\n"
+                + "to:\n"
+                + "  " + newDisplay + "\n"
+                + DIVIDER;
+    }
+
+    /**
+     * Returns confirmation that a task was rescheduled.
+     *
+     * @param oldDisplay task display before rescheduling
+     * @param newDisplay task display after rescheduling
+     * @return formatted task-snoozed response
+     */
+    public String formatTaskSnoozed(String oldDisplay, String newDisplay) {
+        return DIVIDER + "\n"
+                + "Gotcha, I've rescheduled this task:\n"
                 + "  " + oldDisplay + "\n"
                 + "to:\n"
                 + "  " + newDisplay + "\n"
