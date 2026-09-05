@@ -114,6 +114,9 @@ public class Kafka {
      * @throws KafkaException if parsing, task handling, or saving fails
      */
     private String processCommand(CommandType command, String input) throws KafkaException {
+        assert command != null : "Command must be parsed before dispatch";
+        assert command != CommandType.BYE
+            : "BYE must be handled before command dispatch";
         return switch (command) {
             case LIST -> listTasks();
             case TODO -> addTodo(input);

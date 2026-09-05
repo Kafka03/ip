@@ -49,6 +49,7 @@ public class MainWindow extends AnchorPane {
      */
     @FXML
     private void handleUserInput() {
+        assert kafka != null : "Kafka must be set before processing user input";
         String input = userInput.getText();
         String response = kafka.getResponse(input);
         DialogBox responseDialog = kafka.wasLastResponseError()
@@ -59,13 +60,6 @@ public class MainWindow extends AnchorPane {
                 responseDialog
         );
         userInput.clear();
-    }
-
-    private void greetUponStart(Kafka kafka) {
-        String greeting = kafka.greet();
-        dialogContainer.getChildren().addAll(
-                DialogBox.getKafkaDialog(greeting, kafkaImage)
-        );
     }
 }
 
