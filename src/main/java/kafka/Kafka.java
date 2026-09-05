@@ -52,7 +52,7 @@ public class Kafka {
      * Loads saved tasks and processes commands until the user says bye.
      */
     void run() {
-        ui.greet();
+        ui.showResponse(ui.formatGreeting());
 
         if (!loadTasks()) {
             ui.close();
@@ -65,10 +65,11 @@ public class Kafka {
             if (command == CommandType.BYE) {
                 break;
             }
-            System.out.println(getResponse(input));
+            KafkaResponse response = getResponse(input);
+            ui.showResponse(response.message());
         }
 
-        ui.sayBye();
+        ui.showResponse(ui.formatFarewell());
         ui.close();
     }
 
@@ -83,25 +84,25 @@ public class Kafka {
             isLoaded = true;
             return true;
         } catch (CorruptedTaskDataException exception) {
-            ui.showError(exception.getMessage());
+            ui.showResponse(ui.formatError(exception.getMessage()));
             if (!ui.confirmStorageOverwrite(taskStorage.getFilePath())) {
-                ui.showStorageFileLocation(taskStorage.getFilePath());
+                ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
                 return false;
             }
 
             try {
                 taskStorage.save(tasks);
                 isLoaded = true;
-                ui.showStorageOverwritten();
+                ui.showResponse(ui.formatStorageOverwritten());
                 return true;
             } catch (KafkaException saveException) {
-                ui.showError(saveException.getMessage());
-                ui.showStorageFileLocation(taskStorage.getFilePath());
+                ui.showResponse(ui.formatError(saveException.getMessage()));
+                ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
                 return false;
             }
         } catch (KafkaException exception) {
-            ui.showError(exception.getMessage());
-            ui.showStorageFileLocation(taskStorage.getFilePath());
+            ui.showResponse(ui.formatError(exception.getMessage()));
+            ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
             return false;
         }
     }
@@ -188,9 +189,9 @@ public class Kafka {
      */
     private String markTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.keyword());
-        String markedTask = tasks.markTask(taskNumber);
+        Task markedTask = tasks.markTask(taskNumber);
         taskStorage.save(tasks);
-        return ui.formatTaskMarked(markedTask);
+        return ui.formatTaskMarked(markedTask.display());
     }
 
     /**
@@ -201,9 +202,9 @@ public class Kafka {
      */
     private String unmarkTask(String input) throws KafkaException {
         int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.keyword());
-        String unmarkedTask = tasks.unmarkTask(taskNumber);
+        Task unmarkedTask = tasks.unmarkTask(taskNumber);
         taskStorage.save(tasks);
-        return ui.formatTaskUnmarked(unmarkedTask);
+        return ui.formatTaskUnmarked(unmarkedTask.display());
     }
 
     /**
@@ -239,25 +240,26 @@ public class Kafka {
     }
 
     /**
-     * Processes one command and returns its response for any user interface.
-     * Saved tasks are loaded lazily when a GUI submits its first command.
+     * Processes one command and returns its display message and error status.
      *
      * @param input complete command entered by the user
-     * @return response ready to display to the user
+     * @return result containing the formatted message and its error status
      */
-    public String getResponse(String input) {
+    public KafkaResponse getResponse(String input) {
         CommandType command = CommandType.fromInput(input);
-        wasLastResponseError = command == CommandType.UNKNOWN;
+
         if (command == CommandType.BYE) {
-            return ui.formatFarewell();
+            return new KafkaResponse(ui.formatFarewell(), false);
         }
 
         try {
             ensureTasksLoaded();
-            return processCommand(command, input);
+            String message = processCommand(command, input);
+            boolean isError = command == CommandType.UNKNOWN;
+            return new KafkaResponse(message, isError);
         } catch (KafkaException exception) {
-            wasLastResponseError = true;
-            return ui.formatError(exception.getMessage());
+            String message = ui.formatError(exception.getMessage());
+            return new KafkaResponse(message, true);
         }
     }
 
@@ -276,9 +278,11 @@ public class Kafka {
      * @throws KafkaException if the saved tasks cannot be loaded
      */
     private void ensureTasksLoaded() throws KafkaException {
-        if (!isLoaded) {
-            tasks = taskStorage.load();
-            isLoaded = true;
+        if (isLoaded) {
+            return;
+        }
+        if (!loadTasks()) {
+            throw new KafkaException("Saved tasks could not be loaded.");
         }
     }
 

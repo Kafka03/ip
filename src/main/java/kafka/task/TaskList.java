@@ -10,7 +10,6 @@ import kafka.exception.KafkaException;
  * Stores and manages tasks in list order.
  */
 public class TaskList {
-    private static final String DIVIDER = "_".repeat(60);
     private final List<Task> taskList;
 
     /**
@@ -86,22 +85,26 @@ public class TaskList {
      * Marks the task at the user-facing one-based position as completed.
      *
      * @param taskNumber one-based number of the task to mark
-     * @return updated display text for the marked task
+     * @return task that was marked
      * @throws KafkaException if no task has that number
      */
-    public String markTask(int taskNumber) throws KafkaException {
-        return getTask(taskNumber).mark();
+    public Task markTask(int taskNumber) throws KafkaException {
+        Task task = getTask(taskNumber);
+        task.mark();
+        return task;
     }
 
     /**
      * Marks the task at the user-facing one-based position as incomplete.
      *
      * @param taskNumber one-based number of the task to unmark
-     * @return updated display text for the unmarked task
+     * @return task that was unmarked
      * @throws KafkaException if no task has that number
      */
-    public String unmarkTask(int taskNumber) throws KafkaException {
-        return getTask(taskNumber).unmark();
+    public Task unmarkTask(int taskNumber) throws KafkaException {
+        Task task = getTask(taskNumber);
+        task.unmark();
+        return task;
     }
 
     /**
@@ -129,13 +132,4 @@ public class TaskList {
         return taskNumber - 1;
     }
 
-    /**
-     * Prints every task with its one-based list number.
-     */
-    public void showTasks() {
-        for (int i = 0; i < taskList.size(); i++) {
-            System.out.println((i + 1) + "." + taskList.get(i).display());
-        }
-        System.out.println(DIVIDER);
-    }
 }

@@ -111,49 +111,86 @@ public class TaskStorage {
      * @param line one complete record from the task data file
      * @param lineNumber one-based source line used in corruption messages
      * @return reconstructed todo, deadline, or event
-     * @throws KafkaException if the record cannot be trusted
+     * @throws CorruptedTaskDataException if the record cannot be trusted
      */
-    private Task parseTask(String line, int lineNumber) throws KafkaException {
+    private Task parseTask(String line, int lineNumber) throws CorruptedTaskDataException {
         assert lineNumber >= 1 : "Storage line numbers must be one-based";
         assert !line.isBlank() : "Blank storage lines must be skipped before parsing";
+        String[] fields = parseFields(line, lineNumber);
+        Task task = createTask(fields, lineNumber);
+        restoreStatus(task, fields[1], lineNumber);
+        return task;
+    }
+
+    /**
+     * Splits a record and checks fields shared by every task type.
+     *
+     * @param line one complete record from the task data file
+     * @param lineNumber one-based source line used in corruption messages
+     * @return validated fields from the record
+     * @throws CorruptedTaskDataException if required common fields are missing
+     */
+    private String[] parseFields(String line, int lineNumber)
+      throws CorruptedTaskDataException {
         String[] fields = line.split("\\s*\\|\\s*", -1);
         if (fields.length < 3) {
             throw malformedLine(lineNumber);
         }
 
-        String type = fields[0];
-        String status = fields[1];
-        Task task;
+        requireNonBlank(fields[2], lineNumber);
+        return fields;
+    }
 
-        if (fields[2].isBlank()) {
-            throw malformedLine(lineNumber);
-        }
-
-        switch (type) {
+    /**
+     * Creates the concrete task represented by validated storage fields.
+     *
+     * @param fields fields parsed from one storage record
+     * @param lineNumber one-based source line used in corruption messages
+     * @return reconstructed todo, deadline, or event
+     * @throws CorruptedTaskDataException if the type-specific fields are invalid
+     */
+    private Task createTask(String[] fields, int lineNumber)
+            throws CorruptedTaskDataException {
+        return switch (fields[0]) {
             case TODO_TYPE -> {
                 requireFieldCount(fields, 3, lineNumber);
-                task = new Todo(fields[2]);
+                yield new Todo(fields[2]);
             }
             case DEADLINE_TYPE -> {
                 requireFieldCount(fields, 4, lineNumber);
                 requireNonBlank(fields[3], lineNumber);
-                task = new Deadline(fields[2], fields[3]);
+                yield new Deadline(fields[2], fields[3]);
             }
             case EVENT_TYPE -> {
                 requireFieldCount(fields, 5, lineNumber);
                 requireNonBlank(fields[3], lineNumber);
                 requireNonBlank(fields[4], lineNumber);
-                task = new Event(fields[2], fields[3], fields[4]);
+                yield new Event(fields[2], fields[3], fields[4]);
             }
             default -> throw malformedLine(lineNumber);
+        };
+    }
+
+    /**
+     * Restores a task's saved completion state.
+     *
+     * @param task task whose state should be restored
+     * @param status saved completion marker
+     * @param lineNumber one-based source line used in corruption messages
+     * @throws CorruptedTaskDataException if the completion marker is invalid
+     */
+    private void restoreStatus(Task task, String status, int lineNumber)
+            throws CorruptedTaskDataException {
+        if (NOT_DONE_STATUS.equals(status)) {
+            return;
         }
 
-        if (status.equals(DONE_STATUS)) {
+        if (DONE_STATUS.equals(status)) {
             task.mark();
-        } else if (!status.equals(NOT_DONE_STATUS)) {
-            throw malformedLine(lineNumber);
+            return;
         }
-        return task;
+
+        throw malformedLine(lineNumber);
     }
 
     /**
@@ -162,10 +199,10 @@ public class TaskStorage {
      * @param fields fields parsed from the record
      * @param expected required field count
      * @param lineNumber one-based source line used in corruption messages
-     * @throws KafkaException if the record has an unexpected number of fields
+     * @throws CorruptedTaskDataException if the record has an unexpected number of fields
      */
     private void requireFieldCount(String[] fields, int expected, int lineNumber)
-            throws KafkaException {
+            throws CorruptedTaskDataException {
         if (fields.length != expected) {
             throw malformedLine(lineNumber);
         }
@@ -176,9 +213,10 @@ public class TaskStorage {
      *
      * @param field saved value to inspect
      * @param lineNumber one-based source line used in corruption messages
-     * @throws KafkaException if the field is blank
+     * @throws CorruptedTaskDataException if the field is blank
      */
-    private void requireNonBlank(String field, int lineNumber) throws KafkaException {
+    private void requireNonBlank(String field, int lineNumber)
+            throws CorruptedTaskDataException {
         if (field.isBlank()) {
             throw malformedLine(lineNumber);
         }

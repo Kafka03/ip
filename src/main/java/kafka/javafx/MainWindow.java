@@ -1,13 +1,13 @@
 package kafka.javafx;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import kafka.Kafka;
+import kafka.KafkaResponse;
 import kafka.javafx.components.DialogBox;
 
 /**
@@ -20,8 +20,6 @@ public class MainWindow extends AnchorPane {
     private VBox dialogContainer;
     @FXML
     private TextField userInput;
-    @FXML
-    private Button sendButton;
 
     private Kafka kafka;
 
@@ -40,7 +38,7 @@ public class MainWindow extends AnchorPane {
      */
     public void setKafka(Kafka kafka) {
         this.kafka = kafka;
-        greetUponStart(kafka);
+        greetUponStart();
     }
 
     /**
@@ -51,15 +49,23 @@ public class MainWindow extends AnchorPane {
     private void handleUserInput() {
         assert kafka != null : "Kafka must be set before processing user input";
         String input = userInput.getText();
-        String response = kafka.getResponse(input);
-        DialogBox responseDialog = kafka.wasLastResponseError()
-                ? DialogBox.getErrorDialog(response, kafkaImage)
-                : DialogBox.getKafkaDialog(response, kafkaImage);
+        KafkaResponse response = kafka.getResponse(input);
+
+        DialogBox responseDialog = response.isError()
+                ? DialogBox.getErrorDialog(response.message(), kafkaImage)
+                : DialogBox.getKafkaDialog(response.message(), kafkaImage);
         dialogContainer.getChildren().addAll(
                 DialogBox.getUserDialog(input, userImage),
                 responseDialog
         );
         userInput.clear();
+    }
+
+    private void greetUponStart() {
+        String greeting = kafka.greet();
+        dialogContainer.getChildren().addAll(
+                DialogBox.getKafkaDialog(greeting, kafkaImage)
+        );
     }
 }
 

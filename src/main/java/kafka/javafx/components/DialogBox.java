@@ -44,9 +44,9 @@ public class DialogBox extends HBox {
     }
 
     /**
-     * Reverses the content order and aligns this dialog box to the left.
+     * Styles and aligns this dialog box as a reply from Kafka.
      */
-    private void flip() {
+    private void styleAsKafkaReply() {
         this.setAlignment(Pos.TOP_LEFT);
         dialog.getStyleClass().add("reply-label");
         ObservableList<Node> children = FXCollections.observableArrayList(this.getChildren());
@@ -74,7 +74,7 @@ public class DialogBox extends HBox {
      */
     public static DialogBox getKafkaDialog(String message, Image image) {
         DialogBox dialogBox = new DialogBox(message, image);
-        dialogBox.flip();
+        dialogBox.styleAsKafkaReply();
         return dialogBox;
     }
 

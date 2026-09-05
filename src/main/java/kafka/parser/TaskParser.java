@@ -10,6 +10,7 @@ import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import kafka.command.CommandType;
 import kafka.exception.ParserException;
@@ -164,34 +165,76 @@ public final class TaskParser {
     private static String normalizeDateTime(String value) {
         String normalizedWhitespace = value.trim().replaceAll("\\s+", " ");
 
-        for (DateTimeFormatter formatter : DATE_TIME_INPUT_FORMATTERS) {
-            try {
-                LocalDateTime dateTime = LocalDateTime.parse(normalizedWhitespace, formatter);
-                return dateTime.format(DATE_TIME_OUTPUT_FORMATTER);
-            } catch (DateTimeParseException ignored) {
-                // Try the next supported date-time format.
-            }
+        Optional<String> normalizedDateTime = findNormalizedDateTime(normalizedWhitespace);
+        if (normalizedDateTime.isPresent()) {
+            return normalizedDateTime.get();
         }
 
-        for (DateTimeFormatter formatter : DATE_INPUT_FORMATTERS) {
-            try {
-                LocalDate date = LocalDate.parse(normalizedWhitespace, formatter);
-                return date.format(DATE_OUTPUT_FORMATTER);
-            } catch (DateTimeParseException ignored) {
-                // Try the next supported date format.
-            }
+        Optional<String> normalizedDate = findNormalizedDate(normalizedWhitespace);
+        if (normalizedDate.isPresent()) {
+            return normalizedDate.get();
         }
 
-        for (DateTimeFormatter formatter : TIME_INPUT_FORMATTERS) {
-            try {
-                LocalTime time = LocalTime.parse(normalizedWhitespace, formatter);
-                return time.format(TIME_OUTPUT_FORMATTER);
-            } catch (DateTimeParseException ignored) {
-                // Try the next supported time format.
-            }
+        Optional<String> normalizedTime = findNormalizedTime(normalizedWhitespace);
+        if (normalizedTime.isPresent()) {
+            return normalizedTime.get();
         }
 
         return value;
+    }
+
+    /**
+     * Returns the normalized date-time accepted by the first matching format.
+     *
+     * @param value Date-time text to parse.
+     * @return Normalized date-time, or an empty result if no format matches.
+     */
+    private static Optional<String> findNormalizedDateTime(String value) {
+        for (DateTimeFormatter formatter : DATE_TIME_INPUT_FORMATTERS) {
+            try {
+                LocalDateTime dateTime = LocalDateTime.parse(value, formatter);
+                return Optional.of(dateTime.format(DATE_TIME_OUTPUT_FORMATTER));
+            } catch (DateTimeParseException ignored) {
+                continue;
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the normalized date accepted by the first matching format.
+     *
+     * @param value Date text to parse.
+     * @return Normalized date, or an empty result if no format matches.
+     */
+    private static Optional<String> findNormalizedDate(String value) {
+        for (DateTimeFormatter formatter : DATE_INPUT_FORMATTERS) {
+            try {
+                LocalDate date = LocalDate.parse(value, formatter);
+                return Optional.of(date.format(DATE_OUTPUT_FORMATTER));
+            } catch (DateTimeParseException ignored) {
+                continue;
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the normalized time accepted by the first matching format.
+     *
+     * @param value Time text to parse.
+     * @return Normalized time, or an empty result if no format matches.
+     */
+    private static Optional<String> findNormalizedTime(String value) {
+        for (DateTimeFormatter formatter : TIME_INPUT_FORMATTERS) {
+            try {
+                LocalTime time = LocalTime.parse(value, formatter);
+                return Optional.of(time.format(TIME_OUTPUT_FORMATTER));
+            } catch (DateTimeParseException ignored) {
+                continue;
+            }
+        }
+        return Optional.empty();
     }
 
     /**
