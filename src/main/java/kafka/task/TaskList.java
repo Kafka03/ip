@@ -108,6 +108,20 @@ public class TaskList {
     }
 
     /**
+     * Renames the task at the specified one-based position.
+     *
+     * @param taskNumber one-based task number
+     * @param newName replacement task name
+     * @return renamed task
+     * @throws KafkaException if no task has that number
+     */
+    public Task renameTask(int taskNumber, String newName) throws KafkaException {
+        Task task = getTask(taskNumber);
+        task.rename(newName);
+        return task;
+    }
+
+    /**
      * Finds the task at a user-facing one-based position.
      *
      * @param taskNumber one-based number of the requested task

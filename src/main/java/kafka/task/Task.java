@@ -4,7 +4,7 @@ package kafka.task;
  * Represents a task with a description and completion state.
  */
 public abstract class Task {
-    private final String name;
+    private String name;
     private boolean isDone;
 
     /**
@@ -58,4 +58,13 @@ public abstract class Task {
      * @return complete serialized form of this task
      */
     public abstract String toDataString();
+
+    /**
+     * Replaces this task's name.
+     *
+     * @param newName new name for this task
+     */
+    void rename(String newName) {
+        name = newName;
+    }
 }
