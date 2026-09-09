@@ -13,11 +13,11 @@ import kafka.task.TaskList;
 public class Ui {
     private static final String DIVIDER = "_".repeat(60);
     private static final String UNKNOWN_COMMAND_MESSAGE =
-            "Sowwy I don't know that command... pwease try todo, deadline, event, "
+            "(づ｡◕‿‿◕｡)づ Sowwy I don't know that command... pwease try todo, deadline, event, "
             + "list, find, mark, unmark, delete, rename, snooze, or bye.";
     private static final String BANNER = "        /\\_/\\\n"
             + "       ( o.o )     K A F K A\n"
-            + "        > 0 <        \n";
+            + "       > 0 <        \n";
     private final Scanner scanner;
 
     /**
@@ -78,7 +78,7 @@ public class Ui {
     public String formatMatchingTasks(List<Task> matchingTasks) {
         StringBuilder response = new StringBuilder(DIVIDER)
                 .append('\n')
-                .append("I worked hard to find the matching tasks in your list king:")
+                .append("(*°ω°) I worked hard to find the matching tasks in your list king:")
                 .append('\n');
         for (int i = 0; i < matchingTasks.size(); i++) {
             response.append(i + 1)
@@ -102,7 +102,7 @@ public class Ui {
                 + "Yippee!!! I've added this task:\n"
                 + "  " + task.display() + "\n"
                 + "Now you have " + taskCount + " " + taskWord
-                + " in the list. What a legend.\n"
+                + " in the list. What a legend. ᕦ(˘ω˘)ᕤ\n"
                 + DIVIDER;
     }
 
@@ -114,7 +114,7 @@ public class Ui {
      */
     public String formatTaskMarked(String task) {
         return DIVIDER + "\n"
-                + "Ur such a baddie!! I've marked this task as done:\n"
+                + "Ur such a baddie (๑♡⌓♡๑)!! I've marked this task as done:\n"
                 + "  " + task + "\n"
                 + DIVIDER;
     }
@@ -127,7 +127,7 @@ public class Ui {
      */
     public String formatTaskUnmarked(String task) {
         return DIVIDER + "\n"
-                + "Awww issok my g, I've marked this task as not done yet:\n"
+                + "Awww issok my g ✧(ꈍᴗꈍ)✧, I've marked this task as not done yet:\n"
                 + "  " + task + "\n"
                 + DIVIDER;
     }
@@ -176,7 +176,7 @@ public class Ui {
                 + "Gotcha, I've rescheduled this task:\n"
                 + "  " + oldDisplay + "\n"
                 + "to:\n"
-                + "  " + newDisplay + "\n"
+                + "  " + newDisplay + " (♥ω♥*)\n"
                 + DIVIDER;
     }
 
@@ -222,7 +222,7 @@ public class Ui {
             if (response.equalsIgnoreCase("no") || response.equalsIgnoreCase("n")) {
                 return false;
             }
-            System.out.println("Please enter yes or no.");
+            System.out.println("Please enter yes or no. ✧(ꈍᴗꈍ)✧");
         }
     }
 
@@ -268,7 +268,7 @@ public class Ui {
      * @return formatted farewell response
      */
     public String formatFarewell() {
-        return "Bye babe~ Hope we bump into each other soon!\n" + DIVIDER;
+        return "Bye babe~ Hope we bump into each other soon!(˶˘ ³˘(⌒❤‿❤⌒)\n" + DIVIDER;
     }
 
     /**

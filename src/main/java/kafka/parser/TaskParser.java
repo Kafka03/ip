@@ -49,11 +49,11 @@ public final class TaskParser {
     private static final String WHOLE_NUMBER_ERROR =
             "please gimme just a whole numberrr";
     private static final String EMPTY_FIND_KEYWORD_ERROR =
-            "Please provide a keyword to find.";
+            "Please provide a keyword to find that taskkk.";
     private static final String SNOOZE_ARGUMENTS_ERROR =
             "Use snooze TASK_NUMBER followed by /by, /from, or /to. ZZZZzzzzZZZZ";
     private static final String INVALID_SNOOZE_MARKERS_ERROR =
-            "Use /by for a deadline, or /from and/or /to for an event.";
+            "Use /by for a deadline, or /from and/or /to for an event. Sorry for being formal meow it's important!";
     private static final String EMPTY_SNOOZE_TIME_ERROR =
             "A snooze date or time cannot be empty sowwy";
     /** Accepted date patterns, ordered from machine-friendly to human-friendly. */
