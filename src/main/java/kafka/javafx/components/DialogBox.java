@@ -7,6 +7,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -44,6 +45,12 @@ public class DialogBox extends HBox {
 
         dialog.setText(message);
         displayPicture.setImage(image);
+        // Center-crop portraits to a square so the rounded clip fits without stretching the image.
+        double imageSize = Math.min(image.getWidth(), image.getHeight());
+        displayPicture.setViewport(new Rectangle2D(
+                (image.getWidth() - imageSize) / 2,
+                (image.getHeight() - imageSize) / 2,
+                imageSize, imageSize));
     }
 
     /**
