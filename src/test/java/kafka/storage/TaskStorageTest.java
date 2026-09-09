@@ -98,6 +98,84 @@ class TaskStorageTest {
         assertEquals(List.of("T | 0 | current task"), Files.readAllLines(dataFile));
     }
 
+    @Test
+    void save_emptyList_clearsPreviouslySavedTasks() throws KafkaException, IOException {
+        Path dataFile = temporaryDirectory.resolve("kafka.txt");
+        Files.writeString(dataFile, "T | 1 | old task");
+        TaskStorage storage = new TaskStorage(dataFile);
+
+        storage.save(new TaskList());
+
+        assertEquals("", Files.readString(dataFile));
+        assertTrue(storage.load().isEmpty());
+    }
+
+    @Test
+    void load_blankLines_skipsThemAndPreservesTaskOrder() throws KafkaException, IOException {
+        Path dataFile = temporaryDirectory.resolve("kafka.txt");
+        Files.write(dataFile, List.of("", "T|0|first", "   ", "\t", "D | 1 | second | Sunday", ""));
+
+        TaskList tasks = new TaskStorage(dataFile).load();
+
+        assertEquals(List.of("T | 0 | first", "D | 1 | second | Sunday"),
+                tasks.getTasks().stream().map(Task::toDataString).toList());
+    }
+
+    @Test
+    void load_corruptionAfterBlankLines_reportsPhysicalLineAndPreservesFile() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("kafka.txt");
+        String contents = "\nT | 0 | valid\n   \ninvalid record\n";
+        Files.writeString(dataFile, contents);
+
+        CorruptedTaskDataException exception = assertThrows(CorruptedTaskDataException.class, () ->
+                new TaskStorage(dataFile).load());
+
+        assertEquals("Malformed task data on line 4 of " + dataFile, exception.getMessage());
+        assertEquals(contents, Files.readString(dataFile));
+    }
+
+    @Test
+    void saveThenLoad_unicodeDetails_preservesUtf8Text() throws KafkaException {
+        TaskStorage storage = new TaskStorage(temporaryDirectory.resolve("kafka.txt"));
+        TaskList tasks = new TaskList();
+        tasks.addTask(new Todo("read caf\u00e9 notes \u732b"));
+
+        storage.save(tasks);
+
+        assertEquals("T | 0 | read caf\u00e9 notes \u732b", storage.load().getTasks().getFirst().toDataString());
+    }
+
+    @Test
+    void load_directoryInsteadOfFile_wrapsIoFailure() {
+        TaskStorage storage = new TaskStorage(temporaryDirectory);
+
+        KafkaException exception = assertThrows(KafkaException.class, storage::load);
+
+        assertEquals("Could not read tasks from " + temporaryDirectory, exception.getMessage());
+        assertInstanceOf(IOException.class, exception.getCause());
+    }
+
+    @Test
+    void save_parentIsFile_wrapsIoFailureAndPreservesParent() throws IOException {
+        Path parentFile = temporaryDirectory.resolve("parent.txt");
+        Files.writeString(parentFile, "keep me");
+        Path dataFile = parentFile.resolve("kafka.txt");
+        TaskStorage storage = new TaskStorage(dataFile);
+
+        KafkaException exception = assertThrows(KafkaException.class, () -> storage.save(new TaskList()));
+
+        assertEquals("Could not save tasks to " + dataFile, exception.getMessage());
+        assertInstanceOf(IOException.class, exception.getCause());
+        assertEquals("keep me", Files.readString(parentFile));
+    }
+
+    @Test
+    void getFilePath_redundantSegments_returnsNormalizedAbsolutePath() {
+        TaskStorage storage = new TaskStorage(temporaryDirectory.resolve("data").resolve("..").resolve("kafka.txt"));
+
+        assertEquals(temporaryDirectory.resolve("kafka.txt").toAbsolutePath().normalize(), storage.getFilePath());
+    }
+
     @ParameterizedTest
     @MethodSource("invalidStorageRecords")
     void loadInvalidRecordReportsOnlyItsStorageLineError(String invalidRecord)
@@ -119,10 +197,23 @@ class TaskStorageTest {
      */
     private static Stream<Arguments> invalidStorageRecords() {
         return Stream.of(
+                Arguments.of("invalid record"),
+                Arguments.of("T | 0"),
                 Arguments.of("X | 0 | unknown type"),
                 Arguments.of("T | 2 | invalid status"),
+                Arguments.of("D | done | report | Sunday"),
+                Arguments.of("E | | meeting | Monday | Tuesday"),
                 Arguments.of("T | 0 |"),
+                Arguments.of("T | 0 |   "),
+                Arguments.of("T | 0 | task | extra"),
                 Arguments.of("D | 0 | missing deadline"),
-                Arguments.of("E | 0 | meeting | missing end"));
+                Arguments.of("D | 0 | report |"),
+                Arguments.of("D | 0 | | Sunday"),
+                Arguments.of("D | 0 | report | Sunday | extra"),
+                Arguments.of("E | 0 | meeting | missing end"),
+                Arguments.of("E | 0 | meeting | | Tuesday"),
+                Arguments.of("E | 0 | meeting | Monday |"),
+                Arguments.of("E | 0 | | Monday | Tuesday"),
+                Arguments.of("E | 0 | meeting | Monday | Tuesday | extra"));
     }
 }
