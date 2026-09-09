@@ -2,32 +2,35 @@ package kafka.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests command identification for supported and unsupported input.
  */
 class CommandTypeTest {
-    @Test
-    void fromInputRecognizesCommandWithArguments() {
-        assertEquals(CommandType.TODO, CommandType.fromInput("todo read book"));
-        assertEquals(CommandType.FIND, CommandType.fromInput("find book"));
-        assertEquals(CommandType.RENAME, CommandType.fromInput("rename 1 read novel"));
+    @ParameterizedTest
+    @CsvSource({
+        "todo read book, TODO", "deadline report /by Friday, DEADLINE",
+        "event meeting /from 2pm /to 3pm, EVENT", "mark 1, MARK", "unmark 1, UNMARK",
+        "delete 1, DELETE", "rename 1 read novel, RENAME", "snooze 1 /by Sunday, SNOOZE", "find book, FIND"
+    })
+    void fromInput_commandWithArguments_returnsCommand(String input, CommandType expected) {
+        assertEquals(expected, CommandType.fromInput(input));
     }
 
-    @Test
-    void fromInputRecognizesCommandWithoutArguments() {
-        assertEquals(CommandType.LIST, CommandType.fromInput("list"));
+    @ParameterizedTest
+    @EnumSource(value = CommandType.class, names = "UNKNOWN", mode = EnumSource.Mode.EXCLUDE)
+    void fromInput_bareKeyword_returnsCommand(CommandType command) {
+        assertEquals(command, CommandType.fromInput(command.keyword()));
     }
 
-    @Test
-    void fromInputRejectsArgumentsForArgumentFreeCommand() {
-        assertEquals(CommandType.UNKNOWN, CommandType.fromInput("list extra"));
-        assertEquals(CommandType.UNKNOWN, CommandType.fromInput("bye extra"));
-    }
-
-    @Test
-    void fromInputIsCaseSensitive() {
-        assertEquals(CommandType.UNKNOWN, CommandType.fromInput("Todo read book"));
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   ", "help", "Todo read book", "LIST", "todos", "snoozed 1 /by Sunday",
+        "list extra", "bye extra"})
+    void fromInput_unsupportedInput_returnsUnknown(String input) {
+        assertEquals(CommandType.UNKNOWN, CommandType.fromInput(input));
     }
 }

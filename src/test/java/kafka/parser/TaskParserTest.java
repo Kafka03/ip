@@ -4,7 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import kafka.exception.ParserException;
 import kafka.task.Deadline;
@@ -173,5 +178,115 @@ class TaskParserTest {
         assertThrows(ParserException.class, () -> TaskParser.parseRename("rename 2"));
         assertThrows(ParserException.class, () -> TaskParser.parseRename("rename two books"));
         assertThrows(ParserException.class, () -> TaskParser.parseRename("rename 2 buy | cook"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "2024-02-29, 29 Feb 2024",
+        "29/2/2024, 29 Feb 2024",
+        "29 fEb 2024, 29 Feb 2024",
+        "0000, 0000",
+        "9:05, 0905",
+        "12am, 0000",
+        "12pm, 1200",
+        "1:05PM, 1305",
+        "29/2/2024 9:05, 29 Feb 2024 0905",
+        "29 FEB 2024 12am, 29 Feb 2024 0000",
+        "2024-02-29   0905, 29 Feb 2024 0905"
+    })
+    void parseDeadline_supportedDateAndTimeFormats_normalizesValue(String input, String expected)
+            throws ParserException {
+        Deadline deadline = TaskParser.parseDeadline("deadline submit report /by " + input);
+
+        assertEquals("D | 0 | submit report | " + expected, deadline.toDataString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2023-02-29", "31/4/2024", "24:00", "1260", "13pm", "next   Sunday"})
+    void parseDeadline_unrecognizedTiming_preservesText(String timing) throws ParserException {
+        Deadline deadline = TaskParser.parseDeadline("deadline submit report /by " + timing);
+
+        assertEquals("D | 0 | submit report | " + timing, deadline.toDataString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"deadline", "deadline /by Friday", "deadline   /by Friday"})
+    void parseDeadline_missingDescription_throwsParserException(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseDeadline(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "event", "event /from Monday /to Tuesday", "event meeting /from Monday",
+        "event meeting /to Tuesday", "event meeting /to Tuesday /from Monday"
+    })
+    void parseEvent_missingDescriptionOrInvalidMarkers_throwsParserException(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseEvent(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "-1", "1.5", "1 2", "2147483648"})
+    void parseTaskNumber_invalidNumber_throwsParserException(String number) {
+        assertThrows(ParserException.class, () -> TaskParser.parseTaskNumber("delete " + number, "delete"));
+    }
+
+    @Test
+    void parseTaskNumber_boundaryValuesAndWhitespace_returnsNumber() throws ParserException {
+        assertEquals(1, TaskParser.parseTaskNumber("mark   1   ", "mark"));
+        assertEquals(Integer.MAX_VALUE, TaskParser.parseTaskNumber("unmark 2147483647", "unmark"));
+    }
+
+    @Test
+    void parseRename_extraWhitespace_trimsName() throws ParserException {
+        assertEquals(new RenameRequest(1, "read a novel"), TaskParser.parseRename("rename   1   read a novel   "));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"rename", "rename 1   ", "rename 0 book", "rename -1 book", "rename 2147483648 book"})
+    void parseRename_invalidArguments_throwsParserException(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseRename(input));
+    }
+
+    @Test
+    void parseFindKeyword_phraseWithWhitespace_preservesCaseAndTrimsEdges() throws ParserException {
+        assertEquals("Read Book", TaskParser.parseFindKeyword("find   Read Book   "));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"find", "find   "})
+    void parseFindKeyword_missingKeyword_throwsParserException(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseFindKeyword(input));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2024-02-29 12pm, 29 Feb 2024 1200", "next Sunday, next Sunday"})
+    void parseSnooze_deadline_returnsNormalizedReplacement(String input, String expected) throws ParserException {
+        assertEquals(new SnoozeDeadlineResult(2, expected), TaskParser.parseSnooze("snooze   2   /by " + input));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "/from 9am, 0900,",
+        "/to 12pm,, 1200",
+        "/from 2024-02-29 9am /to next Sunday, 29 Feb 2024 0900, next Sunday"
+    })
+    void parseSnooze_event_returnsOnlySuppliedEndpoints(String schedule, String from, String to)
+            throws ParserException {
+        assertEquals(new SnoozeEventResult(3, Optional.ofNullable(from), Optional.ofNullable(to)),
+                TaskParser.parseSnooze("snooze 3 " + schedule));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "snooze", "snooze 1", "snooze one /by Sunday", "snooze 0 /by Sunday",
+        "snooze -1 /by Sunday", "snooze 2147483648 /by Sunday", "snooze 1 Sunday",
+        "snooze 1 /by", "snooze 1 /from", "snooze 1 /to",
+        "snooze 1 /from /to Sunday", "snooze 1 /from Monday /to",
+        "snooze 1 /by Sunday /from Monday", "snooze 1 /by Sunday /to Monday",
+        "snooze 1 /from Monday /by Sunday", "snooze 1 /to Tuesday /from Monday",
+        "snooze 1 /by Sun | Mon", "snooze 1 /from Mon | Tue", "snooze 1 /to Tue | Wed"
+    })
+    void parseSnooze_invalidArguments_throwsParserException(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseSnooze(input));
     }
 }

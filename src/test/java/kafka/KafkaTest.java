@@ -21,7 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import kafka.storage.TaskStorage;
 
@@ -151,7 +153,7 @@ class KafkaTest {
     }
 
     @Test
-    void responseErrorStateTracksLatestResponse() {
+    void getResponse_errorThenSuccess_returnsIndependentErrorFlags() {
         TaskStorage taskStorage = new TaskStorage(temporaryDirectory.resolve("tasks.txt"));
         Kafka kafka = new Kafka(taskStorage);
 
@@ -160,11 +162,12 @@ class KafkaTest {
 
         KafkaResponse successResponse = kafka.getResponse("todo read book");
         assertFalse(successResponse.isError());
+        assertTrue(errorResponse.isError());
     }
 
     @Test
     void mainStopsImmediatelyOnBye() {
-        String output = runKafka("bye\n");
+        String output = runKafka("bye\ntodo should not be added\n");
 
         assertTrue(output.contains("Bye babe~"));
         assertFalse(output.contains("I've added this task"));
@@ -228,6 +231,142 @@ class KafkaTest {
         assertEquals("", Files.readString(dataFile));
         assertTrue(response.message().contains("You have no tasks lined up"));
         assertFalse(response.isError());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "snooze 1 /by 2024-02-29 12pm, D | 1 | report | 29 Feb 2024 1200, "
+                + "1.[D][X] report (by: 29 Feb 2024 1200)",
+        "snooze 2 /from 9am, E | 1 | meeting | 0900 | Tuesday, 2.[E][X] meeting (from: 0900 to: Tuesday)",
+        "snooze 2 /to 5pm, E | 1 | meeting | Monday | 1700, 2.[E][X] meeting (from: Monday to: 1700)",
+        "snooze 2 /from 9am /to 5pm, E | 1 | meeting | 0900 | 1700, 2.[E][X] meeting (from: 0900 to: 1700)"
+    })
+    void getResponse_snooze_persistsScheduleAndCompletionAcrossSessions(String command,
+            String expectedRecord, String expectedDisplay) throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+        assertFalse(kafka.getResponse("deadline report /by Friday").isError());
+        assertFalse(kafka.getResponse("event meeting /from Monday /to Tuesday").isError());
+        assertFalse(kafka.getResponse("mark 1").isError());
+        assertFalse(kafka.getResponse("mark 2").isError());
+
+        KafkaResponse response = kafka.getResponse(command);
+
+        assertFalse(response.isError());
+        assertTrue(response.message().contains("I've rescheduled this task"));
+        assertEquals(command.startsWith("snooze 1")
+                ? List.of(expectedRecord, "E | 1 | meeting | Monday | Tuesday")
+                : List.of("D | 1 | report | Friday", expectedRecord), Files.readAllLines(dataFile));
+        KafkaResponse restored = new Kafka(new TaskStorage(dataFile)).getResponse("list");
+        assertFalse(restored.isError());
+        assertTrue(restored.message().contains(expectedDisplay));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "snooze 1 /by Sunday", "snooze 1 /from Monday", "snooze 2 /to Sunday",
+        "snooze 3 /by Sunday", "snooze 4 /by Sunday", "snooze 2 /by",
+        "snooze 3 /from Monday /to", "snooze 3 /to Tuesday /from Monday",
+        "snooze 2 /by Sun | Mon", "rename 1", "rename 0 changed", "rename 4 changed",
+        "rename 1 buy | cook", "find", "unknown"
+    })
+    void getResponse_invalidEditOrQuery_preservesMemoryAndSavedFile(String command) throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+        assertFalse(kafka.getResponse("todo read book").isError());
+        assertFalse(kafka.getResponse("deadline report /by Friday").isError());
+        assertFalse(kafka.getResponse("event meeting /from Monday /to Tuesday").isError());
+        String originalFile = Files.readString(dataFile);
+        String originalList = kafka.getResponse("list").message();
+
+        KafkaResponse response = kafka.getResponse(command);
+
+        assertTrue(response.isError(), command);
+        assertEquals(originalFile, Files.readString(dataFile));
+        assertEquals(originalList, kafka.getResponse("list").message());
+    }
+
+    @Test
+    void getResponse_unmarkAndDelete_persistAcrossSessions() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+        kafka.getResponse("todo first");
+        kafka.getResponse("todo second");
+        kafka.getResponse("mark 2");
+
+        assertFalse(kafka.getResponse("unmark 2").isError());
+        assertFalse(kafka.getResponse("delete 1").isError());
+
+        assertEquals(List.of("T | 0 | second"), Files.readAllLines(dataFile));
+        KafkaResponse response = new Kafka(new TaskStorage(dataFile)).getResponse("list");
+        assertTrue(response.message().contains("1.[T][ ] second"));
+        assertFalse(response.message().contains("first"));
+    }
+
+    @Test
+    void getResponse_readOnlyCommands_doNotRewriteStorage() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        String savedContents = "T|0|read book\n\nD|1|report|Sunday\n";
+        Files.writeString(dataFile, savedContents);
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+
+        assertFalse(kafka.getResponse("list").isError());
+        assertFalse(kafka.getResponse("find book").isError());
+        assertFalse(kafka.getResponse("find absent").isError());
+        assertTrue(kafka.getResponse("unknown").isError());
+        KafkaResponse farewell = kafka.getResponse("bye");
+        assertFalse(farewell.isError());
+        assertTrue(farewell.message().contains("Bye babe~"));
+        assertEquals(savedContents, Files.readString(dataFile));
+    }
+
+    @Test
+    void getResponse_unreadableStorage_returnsErrorWithoutRequestingOverwrite() {
+        Kafka kafka = new Kafka(new TaskStorage(temporaryDirectory));
+
+        KafkaResponse response = kafka.getResponse("list");
+
+        assertTrue(response.isError());
+        assertTrue(response.message().contains("Saved tasks could not be loaded"));
+        assertFalse(capturedOutput.toString(StandardCharsets.UTF_8).contains("Overwrite it"));
+    }
+
+    @Test
+    void getResponse_saveFailure_returnsErrorAndPreservesExistingFile() throws IOException {
+        Path parentFile = temporaryDirectory.resolve("parent.txt");
+        Files.writeString(parentFile, "keep me");
+        Kafka kafka = new Kafka(new TaskStorage(parentFile.resolve("tasks.txt")));
+
+        KafkaResponse response = kafka.getResponse("todo read book");
+
+        assertTrue(response.isError());
+        assertTrue(response.message().contains("Could not save tasks to"));
+        assertEquals("keep me", Files.readString(parentFile));
+    }
+
+    @Test
+    void corruptedFileRecovery_invalidAnswerThenYes_repromptsAndContinues() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Files.writeString(dataFile, "invalid saved task");
+
+        String output = runKafka("maybe\n Y \ntodo recovered\nbye\n");
+
+        assertTrue(output.contains("Please enter yes or no."));
+        assertEquals(2, countOccurrences(output, "Overwrite it with an empty task list"));
+        assertEquals(List.of("T | 0 | recovered"), Files.readAllLines(dataFile));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {" N \n", ""})
+    void corruptedFileRecovery_refusalOrEndOfInput_preservesFile(String input) throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Files.writeString(dataFile, "invalid saved task");
+
+        String output = runKafka(input);
+
+        assertEquals("invalid saved task", Files.readString(dataFile));
+        assertTrue(output.contains("Your task data was not changed."));
+        assertFalse(output.contains("Starting with an empty list."));
     }
 
     @ParameterizedTest

@@ -420,6 +420,8 @@ public final class TaskParser {
 
         Optional<String> newFrom = parseNewFrom(schedule, fromPosition, toPosition);
         Optional<String> newTo = parseNewTo(schedule, toPosition);
+        assert newFrom.isPresent() || newTo.isPresent()
+        : "A parsed event snooze must include at least one timestamp";
         return new SnoozeEventResult(taskNumber, newFrom, newTo);
     }
 
