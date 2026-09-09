@@ -7,11 +7,13 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 
 /**
  * Displays a message together with its associated profile image.
@@ -21,7 +23,7 @@ public class DialogBox extends HBox {
             "Unable to load the dialog box layout.";
 
     @FXML
-    private Label dialog;
+    private TextFlow dialog;
     @FXML
     private ImageView displayPicture;
 
@@ -42,8 +44,13 @@ public class DialogBox extends HBox {
             throw new IllegalStateException(LAYOUT_LOAD_ERROR, exception);
         }
 
-        dialog.setText(message);
+        dialog.getChildren().add(new Text(message));
         displayPicture.setImage(image);
+        // Center-crop portraits to a square so the rounded clip fits without stretching the image.
+        double imageSize = Math.min(image.getWidth(), image.getHeight());
+        double cropX = (image.getWidth() - imageSize) / 2;
+        double cropY = (image.getHeight() - imageSize) / 2;
+        displayPicture.setViewport(new Rectangle2D(cropX, cropY, imageSize, imageSize));
     }
 
     /**
@@ -76,9 +83,25 @@ public class DialogBox extends HBox {
      * @return left-aligned Kafka dialog box
      */
     public static DialogBox getKafkaDialog(String message, Image image) {
-        DialogBox dialogBox = new DialogBox(message, image);
+        String displayMessage = removeConsoleDividers(message);
+        DialogBox dialogBox = new DialogBox(displayMessage, image);
+        dialogBox.dialog.getChildren().setAll(MessageTextFormatter.formatResponse(displayMessage));
         dialogBox.styleAsKafkaReply();
         return dialogBox;
+    }
+
+    /**
+     * Removes the console's outer divider lines while preserving the message contents.
+     */
+    private static String removeConsoleDividers(String message) {
+        String divider = "_".repeat(60);
+        if (message.startsWith(divider + "\n")) {
+            message = message.substring(divider.length() + 1);
+        }
+        if (message.endsWith("\n" + divider)) {
+            message = message.substring(0, message.length() - divider.length() - 1);
+        }
+        return message;
     }
 
     /**
@@ -89,7 +112,8 @@ public class DialogBox extends HBox {
      * @return left-aligned error dialog box
      */
     public static DialogBox getErrorDialog(String message, Image image) {
-        DialogBox dialogBox = getKafkaDialog(message, image);
+        DialogBox dialogBox = new DialogBox(removeConsoleDividers(message), image);
+        dialogBox.styleAsKafkaReply();
         dialogBox.dialog.getStyleClass().add("error-label");
         return dialogBox;
     }

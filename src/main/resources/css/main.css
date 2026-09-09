@@ -7,6 +7,10 @@
     -fx-background-color: main-color;
 }
 
+#dialogContainer {
+    -fx-padding: 11px;
+}
+
 .text-field {
     -fx-background-color: surface-color;
     -fx-background-radius: 0.5em;
@@ -15,7 +19,8 @@
     -fx-text-fill: text-color;
     -fx-prompt-text-fill: #9da3ae;
     -fx-highlight-fill: accent-color;
-    -fx-font: 20px "Arial";
+    -fx-font: 16px "Arial";
+    -fx-padding: 6px 10px;
 }
 
 .button {
