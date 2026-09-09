@@ -155,6 +155,8 @@ public class TaskStorage {
      */
     private Task createTask(String[] fields, int lineNumber)
             throws CorruptedTaskDataException {
+        assert fields.length >= 3
+        : "Storage fields must pass common-field validation before task creation";
         return switch (fields[0]) {
             case TODO_TYPE -> {
                 requireFieldCount(fields, 3, lineNumber);

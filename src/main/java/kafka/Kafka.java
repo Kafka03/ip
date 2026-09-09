@@ -126,6 +126,7 @@ public class Kafka {
      * @throws KafkaException if parsing, task handling, or saving fails
      */
     private String processCommand(CommandType command, String input) throws KafkaException {
+        assert isLoaded : "Tasks must be loaded before processing commands";
         assert command != null : "Command must be parsed before dispatch";
         assert command != CommandType.BYE
             : "BYE must be handled before command dispatch";
