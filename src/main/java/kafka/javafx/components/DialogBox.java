@@ -47,10 +47,9 @@ public class DialogBox extends HBox {
         displayPicture.setImage(image);
         // Center-crop portraits to a square so the rounded clip fits without stretching the image.
         double imageSize = Math.min(image.getWidth(), image.getHeight());
-        displayPicture.setViewport(new Rectangle2D(
-                (image.getWidth() - imageSize) / 2,
-                (image.getHeight() - imageSize) / 2,
-                imageSize, imageSize));
+        double cropX = (image.getWidth() - imageSize) / 2;
+        double cropY = (image.getHeight() - imageSize) / 2;
+        displayPicture.setViewport(new Rectangle2D(cropX, cropY, imageSize, imageSize));
     }
 
     /**
@@ -83,9 +82,23 @@ public class DialogBox extends HBox {
      * @return left-aligned Kafka dialog box
      */
     public static DialogBox getKafkaDialog(String message, Image image) {
-        DialogBox dialogBox = new DialogBox(message, image);
+        DialogBox dialogBox = new DialogBox(removeConsoleDividers(message), image);
         dialogBox.styleAsKafkaReply();
         return dialogBox;
+    }
+
+    /**
+     * Removes the console's outer divider lines while preserving the message contents.
+     */
+    private static String removeConsoleDividers(String message) {
+        String divider = "_".repeat(60);
+        if (message.startsWith(divider + "\n")) {
+            message = message.substring(divider.length() + 1);
+        }
+        if (message.endsWith("\n" + divider)) {
+            message = message.substring(0, message.length() - divider.length() - 1);
+        }
+        return message;
     }
 
     /**

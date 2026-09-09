@@ -13,7 +13,7 @@
             <Insets left="7.0" right="7.0" />
           </HBox.margin>
           <padding>
-            <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+            <Insets bottom="11.0" left="11.0" right="11.0" top="11.0" />
           </padding>
     </Label>
     <ImageView fx:id="displayPicture" fitHeight="48.0" fitWidth="48.0" pickOnBounds="true" preserveRatio="true">
