@@ -12,13 +12,13 @@ import kafka.exception.KafkaException;
  */
 public class TaskList {
     private static final String TASK_NOT_FOUND_ERROR =
-            "There is no task with that number";
+            "There is no task with that number ooof. Maybe you can check list agn? (*≧ω≦)";
     private static final String NOT_DEADLINE_ERROR =
-            "Only a deadline can be snoozed with /by.";
+            "(✿ヘᴥヘ) Only a deadline can be snoozed with /by.";
     private static final String NOT_EVENT_ERROR =
-            "Only an event can be snoozed with /from or /to.";
+            "(✿ヘᴥヘ) Only an event can be snoozed with /from or /to.";
     private static final String EMPTY_EVENT_SNOOZE_ASSERTION =
-            "A parsed event snooze must change at least one endpoint";
+            "An event snooze must change at least one timestamp";
 
     private final List<Task> taskList;
 

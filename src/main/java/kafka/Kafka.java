@@ -20,7 +20,7 @@ import kafka.ui.Ui;
  */
 public class Kafka {
     private static final String LOAD_TASKS_ERROR =
-            "Saved tasks could not be loaded.";
+            "Saved tasks could not be loaded err... (*°ω°)";
     private static final String UNSUPPORTED_SNOOZE_ERROR =
             "This snooze request is not supported.";
 
