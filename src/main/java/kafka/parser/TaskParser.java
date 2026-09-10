@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import kafka.command.CommandType;
 import kafka.exception.ParserException;
@@ -35,6 +37,8 @@ public final class TaskParser {
             "The deadline date or time cannot be empty alpha.";
     private static final String STORAGE_DELIMITER_ERROR =
             "Task details cannot contain | sorryyy";
+    private static final String MULTILINE_DETAILS_ERROR =
+            "Task details must stay on one line.";
     private static final String EMPTY_EVENT_DESCRIPTION_ERROR =
             "are u event-ing new ways to tease me? "
             + "The event description cannot be empty.";
@@ -89,7 +93,7 @@ public final class TaskParser {
      * @throws ParserException if the description is empty or unsafe to store
      */
     public static Todo parseTodo(String input) throws ParserException {
-        String description = input.substring(CommandType.TODO.keyword().length()).trim();
+        String description = input.substring(CommandType.TODO.keyword().length()).strip();
         if (description.isEmpty()) {
             throw new ParserException(TODO_DESCRIPTION_ERROR);
         }
@@ -105,11 +109,11 @@ public final class TaskParser {
      * @throws ParserException if its description, marker, or deadline is invalid
      */
     public static Deadline parseDeadline(String input) throws ParserException {
-        String taskDetails = input.substring(CommandType.DEADLINE.keyword().length()).trim();
-        int byMarkerPosition = taskDetails.indexOf(BY_MARKER);
+        String taskDetails = input.substring(CommandType.DEADLINE.keyword().length()).strip();
+        int byMarkerPosition = findUniqueMarker(taskDetails, BY_MARKER);
         String description = byMarkerPosition < 0
                 ? taskDetails
-                : taskDetails.substring(0, byMarkerPosition).trim();
+                : taskDetails.substring(0, byMarkerPosition).strip();
 
         if (description.isEmpty()) {
             throw new ParserException(EMPTY_DEADLINE_DESCRIPTION_ERROR);
@@ -118,7 +122,7 @@ public final class TaskParser {
             throw new ParserException(MISSING_BY_MARKER_ERROR);
         }
 
-        String by = taskDetails.substring(byMarkerPosition + BY_MARKER.length()).trim();
+        String by = taskDetails.substring(byMarkerPosition + BY_MARKER.length()).strip();
         if (by.isEmpty()) {
             throw new ParserException(EMPTY_DEADLINE_TIME_ERROR);
         }
@@ -134,9 +138,9 @@ public final class TaskParser {
      * @throws ParserException if required details or markers are invalid
      */
     public static Event parseEvent(String input) throws ParserException {
-        String taskDetails = input.substring(CommandType.EVENT.keyword().length()).trim();
-        int fromMarkerPosition = taskDetails.indexOf(FROM_MARKER);
-        int toMarkerPosition = taskDetails.indexOf(TO_MARKER);
+        String taskDetails = input.substring(CommandType.EVENT.keyword().length()).strip();
+        int fromMarkerPosition = findUniqueMarker(taskDetails, FROM_MARKER);
+        int toMarkerPosition = findUniqueMarker(taskDetails, TO_MARKER);
         int descriptionEnd = taskDetails.length();
 
         // End the description at whichever valid marker appears first.
@@ -147,7 +151,7 @@ public final class TaskParser {
             descriptionEnd = Math.min(descriptionEnd, toMarkerPosition);
         }
 
-        String description = taskDetails.substring(0, descriptionEnd).trim();
+        String description = taskDetails.substring(0, descriptionEnd).strip();
         if (description.isEmpty()) {
             throw new ParserException(EMPTY_EVENT_DESCRIPTION_ERROR);
         }
@@ -156,8 +160,8 @@ public final class TaskParser {
             throw new ParserException(INVALID_EVENT_MARKERS_ERROR);
         }
         String from = taskDetails.substring(fromMarkerPosition + FROM_MARKER.length(),
-                toMarkerPosition).trim();
-        String to = taskDetails.substring(toMarkerPosition + TO_MARKER.length()).trim();
+                toMarkerPosition).strip();
+        String to = taskDetails.substring(toMarkerPosition + TO_MARKER.length()).strip();
         if (from.isEmpty() || to.isEmpty()) {
             throw new ParserException(EMPTY_EVENT_TIME_ERROR);
         }
@@ -166,17 +170,43 @@ public final class TaskParser {
     }
 
     /**
-     * Rejects values containing the pipe reserved as the storage separator.
+     * Rejects characters that would split a saved field or task record.
      *
      * @param values user-provided values that will be written to storage
-     * @throws ParserException if any value contains the reserved pipe character
+     * @throws ParserException if a value contains a pipe or line break
      */
     private static void rejectStorageDelimiter(String... values) throws ParserException {
         for (String value : values) {
             if (value.contains("|")) {
                 throw new ParserException(STORAGE_DELIMITER_ERROR);
             }
+            if (value.contains("\n") || value.contains("\r")) {
+                throw new ParserException(MULTILINE_DETAILS_ERROR);
+            }
         }
+    }
+
+    /**
+     * Finds a whitespace-delimited marker and rejects a second occurrence.
+     * Substrings such as {@code /bytes} and {@code docs/from} remain ordinary text.
+     *
+     * @param text command details to inspect
+     * @param marker exact marker token to locate
+     * @return marker position, or {@code -1} when absent
+     * @throws ParserException if the marker occurs more than once
+     */
+    private static int findUniqueMarker(String text, String marker) throws ParserException {
+        Pattern pattern = Pattern.compile("(?<!\\S)" + Pattern.quote(marker) + "(?!\\S)",
+                Pattern.UNICODE_CHARACTER_CLASS);
+        Matcher matcher = pattern.matcher(text);
+        if (!matcher.find()) {
+            return -1;
+        }
+        int position = matcher.start();
+        if (matcher.find()) {
+            throw new ParserException("Use " + marker + " only once per command.");
+        }
+        return position;
     }
 
     /**
@@ -187,7 +217,7 @@ public final class TaskParser {
      * @return normalized timing text, or the original value when it is free-form
      */
     private static String normalizeDateTime(String value) {
-        String normalizedWhitespace = value.trim().replaceAll("\\s+", " ");
+        String normalizedWhitespace = value.strip().replaceAll("\\s+", " ");
 
         Optional<String> normalizedDateTime = findNormalizedDateTime(normalizedWhitespace);
         if (normalizedDateTime.isPresent()) {
@@ -311,7 +341,7 @@ public final class TaskParser {
      * @throws ParserException if the value is not a positive whole number
      */
     public static int parseTaskNumber(String input, String command) throws ParserException {
-        String numberText = input.substring(command.length()).trim();
+        String numberText = input.substring(command.length()).strip();
         return parsePositiveTaskNumber(numberText);
     }
 
@@ -323,14 +353,14 @@ public final class TaskParser {
      * @throws ParserException if the number or replacement name is invalid
      */
     public static RenameRequest parseRename(String input) throws ParserException {
-        String arguments = input.substring(CommandType.RENAME.keyword().length()).trim();
+        String arguments = input.substring(CommandType.RENAME.keyword().length()).strip();
         String[] parts = arguments.split("\\s+", 2);
         if (parts.length < 2 || parts[1].isBlank()) {
             throw new ParserException(RENAME_ARGUMENTS_ERROR);
         }
 
         int taskNumber = parsePositiveTaskNumber(parts[0]);
-        String newName = parts[1].trim();
+        String newName = parts[1].strip();
         rejectStorageDelimiter(newName);
         return new RenameRequest(taskNumber, newName);
     }
@@ -362,18 +392,18 @@ public final class TaskParser {
      * @throws ParserException if the task number, markers, or values are invalid
      */
     public static SnoozeRequest parseSnooze(String input) throws ParserException {
-        String arguments = input.substring(CommandType.SNOOZE.keyword().length()).trim();
+        String arguments = input.substring(CommandType.SNOOZE.keyword().length()).strip();
         String[] parts = arguments.split("\\s+", 2);
         if (parts.length < 2) {
             throw new ParserException(SNOOZE_ARGUMENTS_ERROR);
         }
 
         int taskNumber = parsePositiveTaskNumber(parts[0]);
-        String schedule = parts[1].trim();
-        if (schedule.startsWith(BY_MARKER)) {
+        String schedule = parts[1].strip();
+        if (findUniqueMarker(schedule, BY_MARKER) == 0) {
             return parseDeadlineSnooze(taskNumber, schedule);
         }
-        if (schedule.startsWith(FROM_MARKER) || schedule.startsWith(TO_MARKER)) {
+        if (findUniqueMarker(schedule, FROM_MARKER) == 0 || findUniqueMarker(schedule, TO_MARKER) == 0) {
             return parseEventSnooze(taskNumber, schedule);
         }
         throw new ParserException(SNOOZE_ARGUMENTS_ERROR);
@@ -389,11 +419,11 @@ public final class TaskParser {
      */
     private static SnoozeDeadlineResult parseDeadlineSnooze(
             int taskNumber, String schedule) throws ParserException {
-        if (schedule.contains(FROM_MARKER) || schedule.contains(TO_MARKER)) {
+        if (findUniqueMarker(schedule, FROM_MARKER) >= 0 || findUniqueMarker(schedule, TO_MARKER) >= 0) {
             throw new ParserException(INVALID_SNOOZE_MARKERS_ERROR);
         }
 
-        String newBy = schedule.substring(BY_MARKER.length()).trim();
+        String newBy = schedule.substring(BY_MARKER.length()).strip();
         validateSnoozeValue(newBy);
         return new SnoozeDeadlineResult(taskNumber, normalizeDateTime(newBy));
     }
@@ -408,12 +438,12 @@ public final class TaskParser {
      */
     private static SnoozeEventResult parseEventSnooze(
             int taskNumber, String schedule) throws ParserException {
-        if (schedule.contains(BY_MARKER)) {
+        if (findUniqueMarker(schedule, BY_MARKER) >= 0) {
             throw new ParserException(INVALID_SNOOZE_MARKERS_ERROR);
         }
 
-        int fromPosition = schedule.indexOf(FROM_MARKER);
-        int toPosition = schedule.indexOf(TO_MARKER);
+        int fromPosition = findUniqueMarker(schedule, FROM_MARKER);
+        int toPosition = findUniqueMarker(schedule, TO_MARKER);
         if (fromPosition > toPosition && toPosition >= 0) {
             throw new ParserException(INVALID_SNOOZE_MARKERS_ERROR);
         }
@@ -441,7 +471,7 @@ public final class TaskParser {
         }
 
         int valueEnd = toPosition < 0 ? schedule.length() : toPosition;
-        String newFrom = schedule.substring(fromPosition + FROM_MARKER.length(), valueEnd).trim();
+        String newFrom = schedule.substring(fromPosition + FROM_MARKER.length(), valueEnd).strip();
         validateSnoozeValue(newFrom);
         return Optional.of(normalizeDateTime(newFrom));
     }
@@ -460,7 +490,7 @@ public final class TaskParser {
             return Optional.empty();
         }
 
-        String newTo = schedule.substring(toPosition + TO_MARKER.length()).trim();
+        String newTo = schedule.substring(toPosition + TO_MARKER.length()).strip();
         validateSnoozeValue(newTo);
         return Optional.of(normalizeDateTime(newTo));
     }
@@ -486,7 +516,7 @@ public final class TaskParser {
      * @throws ParserException if no keyword was supplied
      */
     public static String parseFindKeyword(String input) throws ParserException {
-        String keyword = input.substring(CommandType.FIND.keyword().length()).trim();
+        String keyword = input.substring(CommandType.FIND.keyword().length()).strip();
         if (keyword.isEmpty()) {
             throw new ParserException(EMPTY_FIND_KEYWORD_ERROR);
         }

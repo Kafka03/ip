@@ -30,6 +30,17 @@ public class TaskList {
     }
 
     /**
+     * Returns a copy whose tasks can be edited without changing this list or its tasks.
+     */
+    public TaskList copy() {
+        TaskList copiedTasks = new TaskList();
+        for (Task task : taskList) {
+            copiedTasks.addTask(task.copy());
+        }
+        return copiedTasks;
+    }
+
+    /**
      * Adds a task to the end of the list.
      *
      * @param task task to remember

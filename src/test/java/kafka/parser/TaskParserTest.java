@@ -289,4 +289,75 @@ class TaskParserTest {
     void parseSnooze_invalidArguments_throwsParserException(String input) {
         assertThrows(ParserException.class, () -> TaskParser.parseSnooze(input));
     }
+
+    @Test
+    void parseDeadline_markerSubstrings_preservesDescriptionAndTiming() throws ParserException {
+        assertEquals("D | 0 | read /bytes guide | Friday",
+                TaskParser.parseDeadline("deadline read /bytes guide /by Friday").toDataString());
+        assertEquals("D | 0 | read docs/by | tomorrow/today",
+                TaskParser.parseDeadline("deadline read docs/by /by tomorrow/today").toDataString());
+    }
+
+    @Test
+    void parseEvent_markerSubstrings_preservesDescriptionAndTiming() throws ParserException {
+        assertEquals("E | 0 | review /fromage /today docs/from | Monday | Tuesday",
+                TaskParser.parseEvent("event review /fromage /today docs/from /from Monday /to Tuesday")
+                        .toDataString());
+        assertEquals("E | 0 | meeting | tomorrow/today | Tuesday",
+                TaskParser.parseEvent("event meeting /from tomorrow/today /to Tuesday").toDataString());
+    }
+
+    @Test
+    void parseSnooze_markerSubstrings_preservesTiming() throws ParserException {
+        assertEquals(new SnoozeDeadlineResult(1, "tomorrow/today"),
+                TaskParser.parseSnooze("snooze 1 /by tomorrow/today"));
+        assertEquals(new SnoozeEventResult(2, Optional.of("/bytes"), Optional.empty()),
+                TaskParser.parseSnooze("snooze 2 /from /bytes"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"deadline report /by Friday /by Saturday", "deadline report /by/by Friday",
+        "deadline report /byFriday", "deadline report/ by Friday", "deadline report/by Friday"})
+    void parseDeadline_duplicateOrIncompleteMarkers_rejectsInput(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseDeadline(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "event meeting /from Monday /from Tuesday /to Wednesday",
+        "event meeting /from Monday /to Tuesday /to Wednesday",
+        "event meeting /fromMonday /to Tuesday", "event meeting /from Monday /today Tuesday"
+    })
+    void parseEvent_duplicateOrIncompleteMarkers_rejectsInput(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseEvent(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "snooze 1 /by Friday /by Saturday", "snooze 1 /from Monday /from Tuesday",
+        "snooze 1 /to Monday /to Tuesday", "snooze 1 /from Monday /to Tuesday /to Wednesday",
+        "snooze 1 /byFriday", "snooze 1 /fromMonday", "snooze 1 /today", "snooze 1 /bytes"
+    })
+    void parseSnooze_duplicateOrIncompleteMarkers_rejectsInput(String input) {
+        assertThrows(ParserException.class, () -> TaskParser.parseSnooze(input));
+    }
+
+    @Test
+    void parseTasks_unicodeWhitespace_trimsFieldsAndRecognizesMarkers() throws ParserException {
+        assertEquals("T | 0 | read book", TaskParser.parseTodo("todo \u2003read book\u2003").toDataString());
+        assertEquals("D | 0 | report | Friday",
+                TaskParser.parseDeadline("deadline report\u2003/by\u2003Friday\u2003").toDataString());
+        assertEquals("E | 0 | meeting | Monday | Tuesday",
+                TaskParser.parseEvent("event meeting\u2003/from\u2003Monday\u2003/to\u2003Tuesday")
+                        .toDataString());
+    }
+
+    @Test
+    void parseTasks_multilineDetails_rejectsUnsafeStorageFields() {
+        assertThrows(ParserException.class, () -> TaskParser.parseTodo("todo first\nsecond"));
+        assertThrows(ParserException.class, () -> TaskParser.parseDeadline("deadline report /by next\nMonday"));
+        assertThrows(ParserException.class, () -> TaskParser.parseEvent("event meeting /from Mon\rday /to Tuesday"));
+        assertThrows(ParserException.class, () -> TaskParser.parseRename("rename 1 first\nsecond"));
+        assertThrows(ParserException.class, () -> TaskParser.parseSnooze("snooze 1 /by next\nMonday"));
+    }
 }

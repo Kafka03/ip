@@ -47,6 +47,16 @@ public enum CommandType {
     }
 
     /**
+     * Reports whether this command edits tasks and therefore needs a successful save.
+     */
+    public boolean modifiesTasks() {
+        return switch (this) {
+            case TODO, DEADLINE, EVENT, MARK, UNMARK, DELETE, RENAME, SNOOZE -> true;
+            default -> false;
+        };
+    }
+
+    /**
      * Identifies the command at the start of the user's input.
      * Argument-free commands must appear alone, while the others may be followed
      * by a space and their details.

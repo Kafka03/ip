@@ -1,6 +1,9 @@
 package kafka.javafx;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -26,6 +29,9 @@ public class MainWindow extends AnchorPane {
     private Image userImage = new Image(this.getClass().getResourceAsStream("/images/gigachad.png"));
     private Image kafkaImage = new Image(this.getClass().getResourceAsStream("/images/franzkafka.jpg"));
 
+    /**
+     * Keeps the conversation scrolled to its latest response.
+     */
     @FXML
     public void initialize() {
         assert scrollPane != null : "FXML must inject scrollPane";
@@ -45,23 +51,52 @@ public class MainWindow extends AnchorPane {
     }
 
     /**
-     * Creates two dialog boxes, one echoing user input and the other containing Kafka's reply and then appends them to
-     * the dialog container. Clears the user input after processing.
+     * Displays a command and its response, handling recovery and exit actions in the GUI.
      */
     @FXML
     private void handleUserInput() {
         assert kafka != null : "Kafka must be set before processing user input";
         String input = userInput.getText();
+        dialogContainer.getChildren().add(DialogBox.getUserDialog(input, userImage));
         KafkaResponse response = kafka.getResponse(input);
 
+        if (response.action() == KafkaResponse.Action.CONFIRM_STORAGE_OVERWRITE
+                && confirmStorageOverwrite(response.message())) {
+            response = kafka.recoverStorage();
+            if (!response.isError()) {
+                displayResponse(response);
+                response = kafka.getResponse(input);
+            }
+        }
+
+        displayResponse(response);
+        userInput.clear();
+        if (response.action() == KafkaResponse.Action.EXIT) {
+            Platform.exit();
+        }
+    }
+
+    /**
+     * Asks for recovery in an owned dialog; closing it preserves the saved file.
+     */
+    private boolean confirmStorageOverwrite(String message) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
+                message + "\n\nOverwrite the corrupted file with an empty task list?",
+                ButtonType.YES, ButtonType.NO);
+        confirmation.setTitle("Recover saved tasks");
+        confirmation.setHeaderText("Your saved tasks could not be loaded");
+        confirmation.initOwner(userInput.getScene().getWindow());
+        return confirmation.showAndWait().orElse(ButtonType.NO) == ButtonType.YES;
+    }
+
+    /**
+     * Appends a reply using the style indicated by its error status.
+     */
+    private void displayResponse(KafkaResponse response) {
         DialogBox responseDialog = response.isError()
                 ? DialogBox.getErrorDialog(response.message(), kafkaImage)
                 : DialogBox.getKafkaDialog(response.message(), kafkaImage);
-        dialogContainer.getChildren().addAll(
-                DialogBox.getUserDialog(input, userImage),
-                responseDialog
-        );
-        userInput.clear();
+        dialogContainer.getChildren().add(responseDialog);
     }
 
     private void greetUponStart() {

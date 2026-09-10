@@ -19,6 +19,19 @@ public class Deadline extends Task {
     }
 
     /**
+     * Copies a deadline for an edit that has not yet been saved.
+     */
+    private Deadline(Deadline source) {
+        super(source);
+        this.by = source.by;
+    }
+
+    @Override
+    Task copy() {
+        return new Deadline(this);
+    }
+
+    /**
      * Adds the deadline marker and due value to the common task display.
      *
      * @return display text beginning with {@code [D]}

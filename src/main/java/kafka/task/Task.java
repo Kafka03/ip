@@ -18,6 +18,19 @@ public abstract class Task {
     }
 
     /**
+     * Copies the description and completion state without sharing mutable task state.
+     */
+    protected Task(Task source) {
+        this.name = source.name;
+        this.isDone = source.isDone;
+    }
+
+    /**
+     * Returns an independent copy with the same type, description, status, and schedule.
+     */
+    abstract Task copy();
+
+    /**
      * Marks this task as completed.
      */
     public void mark() {

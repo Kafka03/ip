@@ -14,6 +14,18 @@ public class Todo extends Task {
     }
 
     /**
+     * Copies a todo for an edit that has not yet been saved.
+     */
+    private Todo(Todo source) {
+        super(source);
+    }
+
+    @Override
+    Task copy() {
+        return new Todo(this);
+    }
+
+    /**
      * Adds the todo marker to the common task display.
      *
      * @return display text beginning with {@code [T]}

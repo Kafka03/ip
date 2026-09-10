@@ -5,6 +5,22 @@ package kafka;
  *
  * @param message formatted response to display
  * @param isError whether the response represents an error
+ * @param action follow-up action for the user interface
  */
-public record KafkaResponse(String message, boolean isError) {
+public record KafkaResponse(String message, boolean isError, Action action) {
+    /**
+     * Identifies actions that the user interface must handle itself.
+     */
+    public enum Action {
+        NONE,
+        CONFIRM_STORAGE_OVERWRITE,
+        EXIT
+    }
+
+    /**
+     * Creates a response that only needs to be displayed.
+     */
+    public KafkaResponse(String message, boolean isError) {
+        this(message, isError, Action.NONE);
+    }
 }

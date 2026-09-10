@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import kafka.exception.CorruptedTaskDataException;
@@ -88,23 +89,34 @@ public class TaskStorage {
 
     /**
      * Writes the current tasks to the data file in their list order.
-     * Any previous file contents are replaced with the current task list.
+     * Writes a temporary file first, then atomically replaces the previous file so
+     * a failed write cannot leave partially written task data behind.
      *
      * @param tasks tasks to persist
      * @throws KafkaException if the directory or data file cannot be written
      */
     public void save(TaskList tasks) throws KafkaException {
+        Path temporaryFile = null;
         try {
-            Path parentDirectory = filePath.getParent();
-            if (parentDirectory != null) {
-                Files.createDirectories(parentDirectory);
-            }
+            Path destination = getFilePath();
+            Path parentDirectory = destination.getParent();
+            Files.createDirectories(parentDirectory);
 
             List<String> lines = tasks.getTasks().stream()
                     .map(Task::toDataString)
                     .toList();
-            Files.write(filePath, lines, StandardCharsets.UTF_8);
+            temporaryFile = Files.createTempFile(parentDirectory, "kafka-", ".tmp");
+            Files.write(temporaryFile, lines, StandardCharsets.UTF_8);
+            Files.move(temporaryFile, destination,
+                    StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
+            if (temporaryFile != null) {
+                try {
+                    Files.deleteIfExists(temporaryFile);
+                } catch (IOException cleanupException) {
+                    exception.addSuppressed(cleanupException);
+                }
+            }
             throw new KafkaException(SAVE_ERROR_PREFIX + filePath, exception);
         }
     }

@@ -22,6 +22,20 @@ public class Event extends Task {
     }
 
     /**
+     * Copies an event for an edit that has not yet been saved.
+     */
+    private Event(Event source) {
+        super(source);
+        this.from = source.from;
+        this.to = source.to;
+    }
+
+    @Override
+    Task copy() {
+        return new Event(this);
+    }
+
+    /**
      * Adds the event marker and time range to the common task display.
      *
      * @return display text beginning with {@code [E]}

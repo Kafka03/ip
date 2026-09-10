@@ -70,20 +70,25 @@ public class Ui {
     }
 
     /**
-     * Returns matching tasks with one-based result numbers.
+     * Returns matching tasks with their original one-based task numbers.
      *
+     * @param tasks complete task list used by editing commands
      * @param matchingTasks tasks whose displayed text contains the keyword
      * @return formatted matching-task response
      */
-    public String formatMatchingTasks(List<Task> matchingTasks) {
+    public String formatMatchingTasks(TaskList tasks, List<Task> matchingTasks) {
         StringBuilder response = new StringBuilder(DIVIDER)
                 .append('\n')
                 .append("(*°ω°) I worked hard to find the matching tasks in your list king:")
                 .append('\n');
-        for (int i = 0; i < matchingTasks.size(); i++) {
+        List<Task> allTasks = tasks.getTasks();
+        for (int i = 0; i < allTasks.size(); i++) {
+            if (!matchingTasks.contains(allTasks.get(i))) {
+                continue;
+            }
             response.append(i + 1)
                     .append('.')
-                    .append(matchingTasks.get(i).display())
+                    .append(allTasks.get(i).display())
                     .append('\n');
         }
         return response.append(DIVIDER).toString();

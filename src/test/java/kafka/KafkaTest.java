@@ -25,7 +25,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import kafka.exception.KafkaException;
 import kafka.storage.TaskStorage;
+import kafka.task.TaskList;
 
 /**
  * Tests complete Kafka sessions across the user interface and application layers.
@@ -105,18 +107,19 @@ class KafkaTest {
     }
 
     @Test
-    void mainFindsAndRenumbersMatchingTasks() {
-        String output = runKafka("todo read book\n"
+    void mainFindsAndPreservesOriginalTaskNumbers() {
+        String output = runKafka("todo buy milk\n"
+                + "todo read book\n"
                 + "deadline return book /by June 6th\n"
                 + "todo write essay\n"
-                + "mark 1\nmark 2\nfind book\nbye\n");
+                + "mark 2\nmark 3\nfind book\nbye\n");
 
         String normalizedOutput = output.replace("\r\n", "\n");
         assertTrue(normalizedOutput.contains("I worked hard to find the matching tasks in your list king:\n"
-                + "1.[T][X] read book\n"
-                + "2.[D][X] return book (by: June 6th)\n"
+                + "2.[T][X] read book\n"
+                + "3.[D][X] return book (by: June 6th)\n"
                 + "_".repeat(60)));
-        assertFalse(output.contains("3.[T][ ] write essay"));
+        assertFalse(output.contains("4.[T][ ] write essay"));
     }
 
     @Test
@@ -220,17 +223,30 @@ class KafkaTest {
     }
 
     @Test
-    void getResponseUsesCorruptedFileRecovery() throws IOException {
+    void getResponse_corruptedFile_requestsRecoveryWithoutConsoleInput() throws IOException {
         Path dataFile = temporaryDirectory.resolve("tasks.txt");
         Files.writeString(dataFile, "invalid saved task");
-        System.setIn(new ByteArrayInputStream("yes\n".getBytes(StandardCharsets.UTF_8)));
+        System.setIn(new InputStream() {
+            @Override
+            public int read() {
+                throw new AssertionError("GUI responses must never read from the console");
+            }
+        });
         Kafka kafka = new Kafka(new TaskStorage(dataFile));
 
         KafkaResponse response = kafka.getResponse("list");
 
+        assertTrue(response.isError());
+        assertEquals(KafkaResponse.Action.CONFIRM_STORAGE_OVERWRITE, response.action());
+        assertEquals("invalid saved task", Files.readString(dataFile));
+        assertTrue(response.message().contains(dataFile.toAbsolutePath().toString()));
+        assertEquals("", capturedOutput.toString(StandardCharsets.UTF_8));
+
+        KafkaResponse recovery = kafka.recoverStorage();
+
         assertEquals("", Files.readString(dataFile));
-        assertTrue(response.message().contains("You have no tasks lined up"));
-        assertFalse(response.isError());
+        assertFalse(recovery.isError());
+        assertTrue(kafka.getResponse("list").message().contains("You have no tasks lined up"));
     }
 
     @ParameterizedTest
@@ -316,6 +332,7 @@ class KafkaTest {
         assertTrue(kafka.getResponse("unknown").isError());
         KafkaResponse farewell = kafka.getResponse("bye");
         assertFalse(farewell.isError());
+        assertEquals(KafkaResponse.Action.EXIT, farewell.action());
         assertTrue(farewell.message().contains("Bye babe~"));
         assertEquals(savedContents, Files.readString(dataFile));
     }
@@ -327,7 +344,9 @@ class KafkaTest {
         KafkaResponse response = kafka.getResponse("list");
 
         assertTrue(response.isError());
-        assertTrue(response.message().contains("Saved tasks could not be loaded"));
+        assertTrue(response.message().contains("Could not read tasks from"));
+        assertTrue(response.message().contains(temporaryDirectory.toAbsolutePath().toString()));
+        assertEquals(KafkaResponse.Action.NONE, response.action());
         assertFalse(capturedOutput.toString(StandardCharsets.UTF_8).contains("Overwrite it"));
     }
 
@@ -342,6 +361,139 @@ class KafkaTest {
         assertTrue(response.isError());
         assertTrue(response.message().contains("Could not save tasks to"));
         assertEquals("keep me", Files.readString(parentFile));
+        assertTrue(kafka.getResponse("list").message().contains("You have no tasks lined up"));
+    }
+
+    @Test
+    void getResponse_deleteSearchResult_deletesTheDisplayedTask() {
+        Kafka kafka = new Kafka(new TaskStorage(temporaryDirectory.resolve("tasks.txt")));
+        kafka.getResponse("todo buy milk");
+        kafka.getResponse("todo read book");
+        kafka.getResponse("todo another book");
+
+        String matches = kafka.getResponse("find book").message();
+        assertTrue(matches.contains("2.[T][ ] read book"));
+        assertTrue(matches.contains("3.[T][ ] another book"));
+        assertTrue(kafka.getResponse("delete 2").message().contains("[T][ ] read book"));
+        String remaining = kafka.getResponse("list").message();
+        assertTrue(remaining.contains("1.[T][ ] buy milk"));
+        assertFalse(remaining.contains("read book"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "todo added", "deadline added /by Sunday", "event added /from Monday /to Tuesday",
+        "mark 1", "unmark 2", "unmark 3", "delete 1", "delete 2", "delete 3",
+        "rename 1 changed", "rename 2 changed", "rename 3 changed",
+        "snooze 2 /by Sunday", "snooze 3 /from Wednesday", "snooze 3 /to Thursday",
+        "snooze 3 /from Wednesday /to Thursday"
+    })
+    void getResponse_failedSave_preservesStateAndAllowsRetry(String command) throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        FailingStorage storage = new FailingStorage(dataFile);
+        Kafka kafka = new Kafka(storage);
+        kafka.getResponse("todo read book");
+        kafka.getResponse("deadline report /by Friday");
+        kafka.getResponse("event meeting /from Monday /to Tuesday");
+        kafka.getResponse("mark 2");
+        kafka.getResponse("mark 3");
+        String originalFile = Files.readString(dataFile);
+        String originalList = kafka.getResponse("list").message();
+
+        Path expectedFile = temporaryDirectory.resolve("expected.txt");
+        Files.writeString(expectedFile, originalFile);
+        Kafka expected = new Kafka(new TaskStorage(expectedFile));
+        assertFalse(expected.getResponse(command).isError());
+        storage.failNextSave();
+
+        assertTrue(kafka.getResponse(command).isError());
+        assertEquals(originalList, kafka.getResponse("list").message());
+        assertEquals(originalFile, Files.readString(dataFile));
+        assertFalse(kafka.getResponse(command).isError());
+        assertEquals(Files.readString(expectedFile), Files.readString(dataFile));
+        assertEquals(expected.getResponse("list").message(), kafka.getResponse("list").message());
+    }
+
+    @Test
+    void recoverStorage_failedSave_preservesCorruptionAndAllowsRetry() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Files.writeString(dataFile, "invalid saved task");
+        FailingStorage storage = new FailingStorage(dataFile);
+        Kafka kafka = new Kafka(storage);
+        assertEquals(KafkaResponse.Action.CONFIRM_STORAGE_OVERWRITE, kafka.getResponse("list").action());
+        storage.failNextSave();
+
+        assertTrue(kafka.recoverStorage().isError());
+        assertEquals("invalid saved task", Files.readString(dataFile));
+        assertFalse(kafka.recoverStorage().isError());
+        assertEquals("", Files.readString(dataFile));
+    }
+
+    @Test
+    void recoverStorage_withoutPendingRecovery_preservesTasks() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+        kafka.getResponse("todo keep me");
+        String savedFile = Files.readString(dataFile);
+
+        assertTrue(kafka.recoverStorage().isError());
+        assertEquals(savedFile, Files.readString(dataFile));
+    }
+
+    @Test
+    void getResponse_repairedFile_clearsPendingRecovery() throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Files.writeString(dataFile, "invalid saved task");
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+        assertEquals(KafkaResponse.Action.CONFIRM_STORAGE_OVERWRITE, kafka.getResponse("list").action());
+        Files.writeString(dataFile, "T | 0 | repaired\n");
+
+        assertFalse(kafka.getResponse("list").isError());
+        assertTrue(kafka.recoverStorage().isError());
+        assertEquals("T | 0 | repaired\n", Files.readString(dataFile));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "todo \u2003", "deadline \u2003 /by Sunday", "deadline report /by \u2003",
+        "event \u2003 /from Monday /to Tuesday", "event meeting /from \u2003 /to Tuesday",
+        "event meeting /from Monday /to \u2003", "rename 1 \u2003", "snooze 2 /by \u2003"
+    })
+    void getResponse_unicodeBlankDetails_preservesLoadableFile(String command) throws Exception {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        TaskStorage storage = new TaskStorage(dataFile);
+        Kafka kafka = new Kafka(storage);
+        kafka.getResponse("todo keep me");
+        kafka.getResponse("deadline report /by Friday");
+        String originalFile = Files.readString(dataFile);
+
+        assertTrue(kafka.getResponse(command).isError());
+        assertEquals(originalFile, Files.readString(dataFile));
+        assertEquals(2, storage.load().size());
+    }
+
+    /**
+     * Simulates a temporary save failure without depending on operating system permissions.
+     */
+    private static class FailingStorage extends TaskStorage {
+        private boolean shouldFailNextSave;
+
+        FailingStorage(Path filePath) {
+            super(filePath);
+        }
+
+        void failNextSave() {
+            shouldFailNextSave = true;
+        }
+
+        @Override
+        public void save(TaskList tasks) throws KafkaException {
+            if (shouldFailNextSave) {
+                shouldFailNextSave = false;
+                throw new KafkaException("Simulated save failure");
+            }
+            super.save(tasks);
+        }
     }
 
     @Test
