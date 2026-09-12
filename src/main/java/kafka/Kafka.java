@@ -1,5 +1,7 @@
 package kafka;
 
+import java.io.IOException;
+
 import kafka.command.CommandType;
 import kafka.exception.CorruptedTaskDataException;
 import kafka.exception.KafkaException;
@@ -8,6 +10,7 @@ import kafka.parser.SnoozeDeadlineResult;
 import kafka.parser.SnoozeEventResult;
 import kafka.parser.SnoozeRequest;
 import kafka.parser.TaskParser;
+import kafka.storage.InstanceLock;
 import kafka.storage.TaskStorage;
 import kafka.task.RenameResult;
 import kafka.task.SnoozeResult;
@@ -27,7 +30,6 @@ public class Kafka {
     private TaskList tasks;
     private boolean isLoaded;
     private boolean isRecoveryPending;
-    private boolean wasLastResponseError;
 
     /**
      * Creates Kafka with its usual {@code data/kafka.txt} storage file.
@@ -46,7 +48,6 @@ public class Kafka {
         this.taskStorage = taskStorage;
         this.tasks = new TaskList();
         this.isLoaded = false;
-        this.wasLastResponseError = false;
     }
 
     /**
@@ -55,7 +56,11 @@ public class Kafka {
      * @param args command-line arguments; Kafka does not currently use them
      */
     public static void main(String[] args) {
-        new Kafka().run();
+        try (InstanceLock instanceLock = InstanceLock.acquire(new TaskStorage().getFilePath())) {
+            new Kafka().run();
+        } catch (KafkaException | IOException exception) {
+            System.err.println(exception.getMessage());
+        }
     }
 
     /**
@@ -308,6 +313,7 @@ public class Kafka {
      * @return result containing the formatted message and its error status
      */
     public KafkaResponse getResponse(String input) {
+        input = input.stripLeading();
         CommandType command = CommandType.fromInput(input);
 
         if (command == CommandType.BYE) {
@@ -362,15 +368,6 @@ public class Kafka {
     private String formatStorageError(KafkaException exception) {
         return ui.formatError(exception.getMessage()) + "\n"
                 + ui.formatStorageFileLocation(taskStorage.getFilePath());
-    }
-
-    /**
-     * Returns whether the most recently generated response reports an error.
-     *
-     * @return {@code true} if the latest response is an error
-     */
-    public boolean wasLastResponseError() {
-        return wasLastResponseError;
     }
 
     /**

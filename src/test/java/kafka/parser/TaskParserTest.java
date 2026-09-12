@@ -22,11 +22,11 @@ import kafka.task.Todo;
  */
 class TaskParserTest {
     @Test
-    void parseTodoReturnsTodoAndTrimsDescription() throws ParserException {
+    void parseTodo_preservesDescriptionWhitespace() throws ParserException {
         Task task = TaskParser.parseTodo("todo   read book   ");
 
         assertInstanceOf(Todo.class, task);
-        assertEquals("[T][ ] read book", task.display());
+        assertEquals("[T][ ]    read book   ", task.display());
     }
 
     @Test
@@ -47,14 +47,14 @@ class TaskParserTest {
         Task task = TaskParser.parseDeadline("deadline do homework /by no idea :-p");
 
         assertInstanceOf(Deadline.class, task);
-        assertEquals("[D][ ] do homework (by: no idea :-p)", task.display());
+        assertEquals("[D][ ]  do homework  (by: no idea :-p)", task.display());
     }
 
     @Test
     void parseDeadlineFormatsRecognizedDate() throws ParserException {
         Task task = TaskParser.parseDeadline("deadline submit report /by 2020-01-18");
 
-        assertEquals("[D][ ] submit report (by: 18 Jan 2020)", task.display());
+        assertEquals("[D][ ]  submit report  (by: 18 Jan 2020)", task.display());
     }
 
     @Test
@@ -62,7 +62,7 @@ class TaskParserTest {
             throws ParserException {
         Task task = TaskParser.parseDeadline("deadline sleep /by 11:59pm");
 
-        assertEquals("[D][ ] sleep (by: 2359)", task.display());
+        assertEquals("[D][ ]  sleep  (by: 2359)", task.display());
     }
 
     @Test
@@ -70,7 +70,7 @@ class TaskParserTest {
         Task task = TaskParser.parseDeadline(
                 "deadline celebrate /by 2020-01-18 11:59pm");
 
-        assertEquals("[D][ ] celebrate (by: 18 Jan 2020 2359)", task.display());
+        assertEquals("[D][ ]  celebrate  (by: 18 Jan 2020 2359)", task.display());
     }
 
     @Test
@@ -78,8 +78,8 @@ class TaskParserTest {
         Task slashDate = TaskParser.parseDeadline("deadline first /by 18/1/2020");
         Task humanDate = TaskParser.parseDeadline("deadline second /by 18 jan 2020");
 
-        assertEquals("[D][ ] first (by: 18 Jan 2020)", slashDate.display());
-        assertEquals("[D][ ] second (by: 18 Jan 2020)", humanDate.display());
+        assertEquals("[D][ ]  first  (by: 18 Jan 2020)", slashDate.display());
+        assertEquals("[D][ ]  second  (by: 18 Jan 2020)", humanDate.display());
     }
 
     @Test
@@ -111,7 +111,7 @@ class TaskParserTest {
                 "event project meeting /from Mon 2pm /to 4pm");
 
         assertInstanceOf(Event.class, task);
-        assertEquals("[E][ ] project meeting (from: Mon 2pm to: 1600)",
+        assertEquals("[E][ ]  project meeting  (from: Mon 2pm to: 1600)",
                 task.display());
     }
 
@@ -120,7 +120,7 @@ class TaskParserTest {
         Task task = TaskParser.parseEvent(
                 "event launch /from 2020-01-18 9am /to 2020-01-18 23:59");
 
-        assertEquals("[E][ ] launch (from: 18 Jan 2020 0900"
+        assertEquals("[E][ ]  launch  (from: 18 Jan 2020 0900"
                 + " to: 18 Jan 2020 2359)", task.display());
     }
 
@@ -170,7 +170,7 @@ class TaskParserTest {
         RenameRequest request = TaskParser.parseRename("rename 2 buy groceries");
 
         assertEquals(2, request.taskNumber());
-        assertEquals("buy groceries", request.newName());
+        assertEquals(" buy groceries", request.newName());
     }
 
     @Test
@@ -198,7 +198,7 @@ class TaskParserTest {
             throws ParserException {
         Deadline deadline = TaskParser.parseDeadline("deadline submit report /by " + input);
 
-        assertEquals("D | 0 | submit report | " + expected, deadline.toDataString());
+        assertEquals("D | 0 |  submit report  | " + expected, deadline.toDataString());
     }
 
     @ParameterizedTest
@@ -206,7 +206,7 @@ class TaskParserTest {
     void parseDeadline_unrecognizedTiming_preservesText(String timing) throws ParserException {
         Deadline deadline = TaskParser.parseDeadline("deadline submit report /by " + timing);
 
-        assertEquals("D | 0 | submit report | " + timing, deadline.toDataString());
+        assertEquals("D | 0 |  submit report  | " + timing, deadline.toDataString());
     }
 
     @ParameterizedTest
@@ -237,8 +237,9 @@ class TaskParserTest {
     }
 
     @Test
-    void parseRename_extraWhitespace_trimsName() throws ParserException {
-        assertEquals(new RenameRequest(1, "read a novel"), TaskParser.parseRename("rename   1   read a novel   "));
+    void parseRename_extraWhitespace_preservesName() throws ParserException {
+        assertEquals(new RenameRequest(1, "   read a novel   "),
+                TaskParser.parseRename("rename   1   read a novel   "));
     }
 
     @ParameterizedTest
@@ -292,18 +293,18 @@ class TaskParserTest {
 
     @Test
     void parseDeadline_markerSubstrings_preservesDescriptionAndTiming() throws ParserException {
-        assertEquals("D | 0 | read /bytes guide | Friday",
+        assertEquals("D | 0 |  read /bytes guide  | Friday",
                 TaskParser.parseDeadline("deadline read /bytes guide /by Friday").toDataString());
-        assertEquals("D | 0 | read docs/by | tomorrow/today",
+        assertEquals("D | 0 |  read docs/by  | tomorrow/today",
                 TaskParser.parseDeadline("deadline read docs/by /by tomorrow/today").toDataString());
     }
 
     @Test
     void parseEvent_markerSubstrings_preservesDescriptionAndTiming() throws ParserException {
-        assertEquals("E | 0 | review /fromage /today docs/from | Monday | Tuesday",
+        assertEquals("E | 0 |  review /fromage /today docs/from  | Monday | Tuesday",
                 TaskParser.parseEvent("event review /fromage /today docs/from /from Monday /to Tuesday")
                         .toDataString());
-        assertEquals("E | 0 | meeting | tomorrow/today | Tuesday",
+        assertEquals("E | 0 |  meeting  | tomorrow/today | Tuesday",
                 TaskParser.parseEvent("event meeting /from tomorrow/today /to Tuesday").toDataString());
     }
 
@@ -343,11 +344,12 @@ class TaskParserTest {
     }
 
     @Test
-    void parseTasks_unicodeWhitespace_trimsFieldsAndRecognizesMarkers() throws ParserException {
-        assertEquals("T | 0 | read book", TaskParser.parseTodo("todo \u2003read book\u2003").toDataString());
-        assertEquals("D | 0 | report | Friday",
+    void parseTasks_unicodeWhitespace_preservesDescriptionAndRecognizesMarkers() throws ParserException {
+        assertEquals("T | 0 |  \u2003read book\u2003",
+                TaskParser.parseTodo("todo \u2003read book\u2003").toDataString());
+        assertEquals("D | 0 |  report\u2003 | Friday",
                 TaskParser.parseDeadline("deadline report\u2003/by\u2003Friday\u2003").toDataString());
-        assertEquals("E | 0 | meeting | Monday | Tuesday",
+        assertEquals("E | 0 |  meeting\u2003 | Monday | Tuesday",
                 TaskParser.parseEvent("event meeting\u2003/from\u2003Monday\u2003/to\u2003Tuesday")
                         .toDataString());
     }

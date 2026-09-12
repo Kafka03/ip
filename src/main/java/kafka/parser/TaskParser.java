@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -72,6 +73,12 @@ public final class TaskParser {
             createFormatters(TIME_PATTERNS);
     private static final List<DateTimeFormatter> DATE_TIME_INPUT_FORMATTERS =
             createDateTimeFormatters();
+    /** Finds date and time tokens without interpreting ordinary words such as "Sunday". */
+    private static final Pattern DATE_TIME_TOKEN = Pattern.compile(
+            "(?<![\\p{L}\\p{N}/:-])(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2}/\\d{1,2}/\\d{4}"
+                    + "|\\d{1,2}\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{4}"
+                    + "|\\d{1,2}:\\d{2}(?:am|pm)?|\\d{1,2}(?:am|pm)|\\d{4})(?![\\p{L}\\p{N}/:-])",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS);
     private static final DateTimeFormatter DATE_OUTPUT_FORMATTER =
             DateTimeFormatter.ofPattern("d MMM uuuu", Locale.ENGLISH);
     private static final DateTimeFormatter TIME_OUTPUT_FORMATTER =
@@ -86,15 +93,15 @@ public final class TaskParser {
     }
 
     /**
-     * Parses a todo command into an unfinished todo.
+     * Parses a todo command into an unfinished todo, preserving all description whitespace.
      *
      * @param input complete todo command entered by the user
      * @return parsed todo, ready to join the task list
      * @throws ParserException if the description is empty or unsafe to store
      */
     public static Todo parseTodo(String input) throws ParserException {
-        String description = input.substring(CommandType.TODO.keyword().length()).strip();
-        if (description.isEmpty()) {
+        String description = input.stripLeading().substring(CommandType.TODO.keyword().length());
+        if (description.isBlank()) {
             throw new ParserException(TODO_DESCRIPTION_ERROR);
         }
         rejectStorageDelimiter(description);
@@ -102,20 +109,20 @@ public final class TaskParser {
     }
 
     /**
-     * Parses a deadline command and normalizes any recognized date or time.
+     * Preserves deadline description whitespace and normalizes any recognized date or time.
      *
      * @param input complete deadline command entered by the user
      * @return parsed deadline with display-ready timing text
      * @throws ParserException if its description, marker, or deadline is invalid
      */
     public static Deadline parseDeadline(String input) throws ParserException {
-        String taskDetails = input.substring(CommandType.DEADLINE.keyword().length()).strip();
+        String taskDetails = input.stripLeading().substring(CommandType.DEADLINE.keyword().length());
         int byMarkerPosition = findUniqueMarker(taskDetails, BY_MARKER);
         String description = byMarkerPosition < 0
                 ? taskDetails
-                : taskDetails.substring(0, byMarkerPosition).strip();
+                : taskDetails.substring(0, byMarkerPosition);
 
-        if (description.isEmpty()) {
+        if (description.isBlank()) {
             throw new ParserException(EMPTY_DEADLINE_DESCRIPTION_ERROR);
         }
         if (byMarkerPosition < 0) {
@@ -131,14 +138,14 @@ public final class TaskParser {
     }
 
     /**
-     * Parses an event command into its description, start, and end values.
+     * Preserves event description whitespace and parses its start and end values.
      *
      * @param input complete event command entered by the user
      * @return parsed event with normalized timing text where possible
      * @throws ParserException if required details or markers are invalid
      */
     public static Event parseEvent(String input) throws ParserException {
-        String taskDetails = input.substring(CommandType.EVENT.keyword().length()).strip();
+        String taskDetails = input.stripLeading().substring(CommandType.EVENT.keyword().length());
         int fromMarkerPosition = findUniqueMarker(taskDetails, FROM_MARKER);
         int toMarkerPosition = findUniqueMarker(taskDetails, TO_MARKER);
         int descriptionEnd = taskDetails.length();
@@ -151,8 +158,8 @@ public final class TaskParser {
             descriptionEnd = Math.min(descriptionEnd, toMarkerPosition);
         }
 
-        String description = taskDetails.substring(0, descriptionEnd).strip();
-        if (description.isEmpty()) {
+        String description = taskDetails.substring(0, descriptionEnd);
+        if (description.isBlank()) {
             throw new ParserException(EMPTY_EVENT_DESCRIPTION_ERROR);
         }
         if (fromMarkerPosition < 0 || toMarkerPosition < 0
@@ -217,7 +224,7 @@ public final class TaskParser {
      * @return normalized timing text, or the original value when it is free-form
      */
     private static String normalizeDateTime(String value) {
-        String normalizedWhitespace = value.strip().replaceAll("\\s+", " ");
+        String normalizedWhitespace = value.strip().replaceAll("\\p{javaWhitespace}+", " ");
 
         Optional<String> normalizedDateTime = findNormalizedDateTime(normalizedWhitespace);
         if (normalizedDateTime.isPresent()) {
@@ -235,6 +242,22 @@ public final class TaskParser {
         }
 
         return value;
+    }
+
+    /**
+     * Finds impossible dates and times written in the supported numeric or English formats.
+     * Free-form words are left alone, and matches retain their original positions for GUI styling.
+     *
+     * @param timingText displayed deadline or event timing text.
+     * @return immutable matches identifying invalid date or time tokens.
+     */
+    public static List<MatchResult> findInvalidDateTimes(String timingText) {
+        return DATE_TIME_TOKEN.matcher(timingText).results()
+                .filter(match -> {
+                    String value = match.group().replaceAll("\\p{javaWhitespace}+", " ");
+                    return findNormalizedDate(value).isEmpty() && findNormalizedTime(value).isEmpty();
+                })
+                .toList();
     }
 
     /**
@@ -346,21 +369,24 @@ public final class TaskParser {
     }
 
     /**
-     * Parses the task number and new name from a rename command.
+     * Parses a rename command, preserving all whitespace after the task number.
      *
      * @param input complete rename command entered by the user
      * @return task number and replacement name
      * @throws ParserException if the number or replacement name is invalid
      */
     public static RenameRequest parseRename(String input) throws ParserException {
-        String arguments = input.substring(CommandType.RENAME.keyword().length()).strip();
-        String[] parts = arguments.split("\\s+", 2);
-        if (parts.length < 2 || parts[1].isBlank()) {
+        String arguments = input.stripLeading().substring(CommandType.RENAME.keyword().length()).stripLeading();
+        int nameStart = 0;
+        while (nameStart < arguments.length() && !Character.isWhitespace(arguments.charAt(nameStart))) {
+            nameStart++;
+        }
+        String newName = arguments.substring(nameStart);
+        if (newName.isBlank()) {
             throw new ParserException(RENAME_ARGUMENTS_ERROR);
         }
 
-        int taskNumber = parsePositiveTaskNumber(parts[0]);
-        String newName = parts[1].strip();
+        int taskNumber = parsePositiveTaskNumber(arguments.substring(0, nameStart));
         rejectStorageDelimiter(newName);
         return new RenameRequest(taskNumber, newName);
     }
@@ -393,7 +419,7 @@ public final class TaskParser {
      */
     public static SnoozeRequest parseSnooze(String input) throws ParserException {
         String arguments = input.substring(CommandType.SNOOZE.keyword().length()).strip();
-        String[] parts = arguments.split("\\s+", 2);
+        String[] parts = arguments.split("\\p{javaWhitespace}+", 2);
         if (parts.length < 2) {
             throw new ParserException(SNOOZE_ARGUMENTS_ERROR);
         }

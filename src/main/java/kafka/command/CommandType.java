@@ -59,19 +59,22 @@ public enum CommandType {
     /**
      * Identifies the command at the start of the user's input.
      * Argument-free commands must appear alone, while the others may be followed
-     * by a space and their details.
+     * by whitespace and their details. Surrounding whitespace is ignored.
      *
      * @param input complete command entered by the user
      * @return the matching command, or {@link #UNKNOWN} when nothing matches
      */
     public static CommandType fromInput(String input) {
+        String normalizedInput = input.strip();
         for (CommandType command : values()) {
             if (command == UNKNOWN) {
                 continue;
             }
-            boolean matchesKeyword = input.equals(command.keyword);
+            boolean matchesKeyword = normalizedInput.equals(command.keyword);
             boolean matchesCommandWithArguments = command.acceptsArguments
-                    && input.startsWith(command.keyword + " ");
+                    && normalizedInput.startsWith(command.keyword)
+                    && normalizedInput.length() > command.keyword.length()
+                    && Character.isWhitespace(normalizedInput.charAt(command.keyword.length()));
             if (matchesKeyword || matchesCommandWithArguments) {
                 return command;
             }

@@ -74,10 +74,10 @@ class KafkaTest {
                 + "event project meeting /from Mon 2pm /to 4pm\n"
                 + "list\nbye\n");
 
-        assertTrue(output.contains("1.[T][ ] borrow book"));
-        assertTrue(output.contains("2.[D][ ] return book (by: Sunday)"));
+        assertTrue(output.contains("1.[T][ ]  borrow book"));
+        assertTrue(output.contains("2.[D][ ]  return book  (by: Sunday)"));
         assertTrue(output.contains(
-                "3.[E][ ] project meeting (from: Mon 2pm to: 1600)"));
+                "3.[E][ ]  project meeting  (from: Mon 2pm to: 1600)"));
         assertTrue(output.contains("Now you have 3 tasks in the list."));
     }
 
@@ -85,8 +85,8 @@ class KafkaTest {
     void mainMarksAndUnmarksTypedTask() {
         String output = runKafka("todo read book\nmark 1\nlist\nunmark 1\nlist\nbye\n");
 
-        int markedPosition = output.indexOf("1.[T][X] read book");
-        int unmarkedPosition = output.indexOf("1.[T][ ] read book", markedPosition);
+        int markedPosition = output.indexOf("1.[T][X]  read book");
+        int unmarkedPosition = output.indexOf("1.[T][ ]  read book", markedPosition);
         assertTrue(markedPosition >= 0, "The task should be marked");
         assertTrue(unmarkedPosition > markedPosition,
                 "The task should later be unmarked");
@@ -100,10 +100,10 @@ class KafkaTest {
                 + "delete 2\nlist\nbye\n");
 
         assertTrue(output.contains("Aight. I've yeeted this task:"));
-        assertTrue(output.contains("[D][ ] second (by: Sunday)"));
-        assertTrue(output.contains("1.[T][ ] first"));
-        assertTrue(output.contains("2.[E][ ] third (from: Monday to: Tuesday)"));
-        assertFalse(output.contains("2.[D][ ] second (by: Sunday)"));
+        assertTrue(output.contains("[D][ ]  second  (by: Sunday)"));
+        assertTrue(output.contains("1.[T][ ]  first"));
+        assertTrue(output.contains("2.[E][ ]  third  (from: Monday to: Tuesday)"));
+        assertFalse(output.contains("2.[D][ ]  second  (by: Sunday)"));
     }
 
     @Test
@@ -116,10 +116,10 @@ class KafkaTest {
 
         String normalizedOutput = output.replace("\r\n", "\n");
         assertTrue(normalizedOutput.contains("I worked hard to find the matching tasks in your list king:\n"
-                + "2.[T][X] read book\n"
-                + "3.[D][X] return book (by: June 6th)\n"
+                + "2.[T][X]  read book\n"
+                + "3.[D][X]  return book  (by: June 6th)\n"
                 + "_".repeat(60)));
-        assertFalse(output.contains("4.[T][ ] write essay"));
+        assertFalse(output.contains("4.[T][ ]  write essay"));
     }
 
     @Test
@@ -134,10 +134,10 @@ class KafkaTest {
                 + "deadline submit report /by Sunday\n"
                 + "list\nbye\n");
 
-        assertTrue(output.contains("1.[T][X] read book"));
+        assertTrue(output.contains("1.[T][X]  read book"));
         assertTrue(output.contains(
-                "2.[E][ ] meeting (from: Monday to: Tuesday)"));
-        assertTrue(output.contains("3.[D][ ] submit report (by: Sunday)"));
+                "2.[E][ ]  meeting  (from: Monday to: Tuesday)"));
+        assertTrue(output.contains("3.[D][ ]  submit report  (by: Sunday)"));
         assertFalse(output.contains("4."));
         assertTrue(output.contains("deadline date or time cannot be empty"));
         assertTrue(output.contains("whole number"));
@@ -151,7 +151,7 @@ class KafkaTest {
                 + "todo valid\nlist\nbye\n");
 
         assertTrue(output.contains("I don't know that command"));
-        assertTrue(output.contains("1.[T][ ] valid"));
+        assertTrue(output.contains("1.[T][ ]  valid"));
         assertFalse(output.contains("2."));
     }
 
@@ -168,6 +168,56 @@ class KafkaTest {
         assertTrue(errorResponse.isError());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"\t", "\u2003", "   "})
+    void getResponse_whitespaceAroundCommandsAndArguments_preservesDescriptions(String whitespace) throws IOException {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        Kafka kafka = new Kafka(new TaskStorage(dataFile));
+        assertFalse(kafka.getResponse(whitespace + "todo" + whitespace + "read  book" + whitespace).isError());
+        assertTrue(kafka.getResponse(whitespace + "list" + whitespace).message()
+                .contains("1.[T][ ] " + whitespace + "read  book" + whitespace));
+        assertFalse(kafka.getResponse(whitespace + "rename" + whitespace + "1" + whitespace + "read  novel").isError());
+        assertFalse(kafka.getResponse(whitespace + "mark" + whitespace + "1" + whitespace).isError());
+        assertEquals(List.of("T | 1 | " + whitespace + "read  novel"), Files.readAllLines(dataFile));
+        assertEquals(KafkaResponse.Action.EXIT, kafka.getResponse(whitespace + "bye" + whitespace).action());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"todo", "deadline", "event"})
+    void getResponse_descriptionWhitespace_survivesEditsAndReload(String command) throws Exception {
+        Path dataFile = temporaryDirectory.resolve("tasks.txt");
+        TaskStorage storage = new TaskStorage(dataFile);
+        Kafka kafka = new Kafka(storage);
+        String description = "\t  read\t\tbook   \t";
+        String timing = switch (command) {
+            case "deadline" -> "/by\tFriday";
+            case "event" -> "/from\tMonday\t/to\tTuesday";
+            default -> "";
+        };
+        assertFalse(kafka.getResponse("  " + command + description + timing).isError());
+        String originalRecord = Files.readAllLines(dataFile).getFirst();
+        assertTrue(originalRecord.contains(" | " + description));
+        assertEquals(originalRecord, storage.load().getTasks().getFirst().toDataString());
+        for (String operation : List.of("mark 1", "unmark 1", "list", "find book")) {
+            KafkaResponse response = kafka.getResponse(operation);
+            assertFalse(response.isError());
+            assertTrue(response.message().contains(description));
+            assertTrue(new Kafka(storage).getResponse("list").message().contains(description));
+        }
+        String replacement = "\t renamed  book\t ";
+        assertFalse(kafka.getResponse("rename\t1" + replacement).isError());
+        assertTrue(new Kafka(storage).getResponse("list").message().contains(replacement));
+    }
+
+    @Test
+    void getResponse_snoozeWithUnicodeWhitespace_updatesSchedule() {
+        Kafka kafka = new Kafka(new TaskStorage(temporaryDirectory.resolve("tasks.txt")));
+        kafka.getResponse("deadline report /by Sunday");
+
+        assertFalse(kafka.getResponse("\u2003snooze\u20031\u2003/by\u2003Monday\u2003").isError());
+        assertTrue(kafka.getResponse("list").message().contains("(by: Monday)"));
+    }
+
     @Test
     void mainStopsImmediatelyOnBye() {
         String output = runKafka("bye\ntodo should not be added\n");
@@ -182,18 +232,18 @@ class KafkaTest {
 
         String output = runKafka("list\nbye\n");
 
-        assertTrue(output.contains("1.[T][X] remember me"));
+        assertTrue(output.contains("1.[T][X]  remember me"));
     }
 
     @Test
     void renameChangesTaskNameAndPersistsIt() {
         String renameOutput = runKafka("todo read book\nrename 1 read novel\nbye\n");
 
-        assertTrue(renameOutput.contains("[T][ ] read book"));
-        assertTrue(renameOutput.contains("[T][ ] read novel"));
+        assertTrue(renameOutput.contains("[T][ ]  read book"));
+        assertTrue(renameOutput.contains("[T][ ]  read novel"));
 
         String listOutput = runKafka("list\nbye\n");
-        assertTrue(listOutput.contains("1.[T][ ] read novel"));
+        assertTrue(listOutput.contains("1.[T][ ]  read novel"));
     }
 
     @Test
@@ -251,11 +301,11 @@ class KafkaTest {
 
     @ParameterizedTest
     @CsvSource({
-        "snooze 1 /by 2024-02-29 12pm, D | 1 | report | 29 Feb 2024 1200, "
-                + "1.[D][X] report (by: 29 Feb 2024 1200)",
-        "snooze 2 /from 9am, E | 1 | meeting | 0900 | Tuesday, 2.[E][X] meeting (from: 0900 to: Tuesday)",
-        "snooze 2 /to 5pm, E | 1 | meeting | Monday | 1700, 2.[E][X] meeting (from: Monday to: 1700)",
-        "snooze 2 /from 9am /to 5pm, E | 1 | meeting | 0900 | 1700, 2.[E][X] meeting (from: 0900 to: 1700)"
+        "snooze 1 /by 2024-02-29 12pm, D | 1 |  report  | 29 Feb 2024 1200, "
+                + "1.[D][X]  report  (by: 29 Feb 2024 1200)",
+        "snooze 2 /from 9am, E | 1 |  meeting  | 0900 | Tuesday, 2.[E][X]  meeting  (from: 0900 to: Tuesday)",
+        "snooze 2 /to 5pm, E | 1 |  meeting  | Monday | 1700, 2.[E][X]  meeting  (from: Monday to: 1700)",
+        "snooze 2 /from 9am /to 5pm, E | 1 |  meeting  | 0900 | 1700, 2.[E][X]  meeting  (from: 0900 to: 1700)"
     })
     void getResponse_snooze_persistsScheduleAndCompletionAcrossSessions(String command,
             String expectedRecord, String expectedDisplay) throws IOException {
@@ -271,8 +321,8 @@ class KafkaTest {
         assertFalse(response.isError());
         assertTrue(response.message().contains("I've rescheduled this task"));
         assertEquals(command.startsWith("snooze 1")
-                ? List.of(expectedRecord, "E | 1 | meeting | Monday | Tuesday")
-                : List.of("D | 1 | report | Friday", expectedRecord), Files.readAllLines(dataFile));
+                ? List.of(expectedRecord, "E | 1 |  meeting  | Monday | Tuesday")
+                : List.of("D | 1 |  report  | Friday", expectedRecord), Files.readAllLines(dataFile));
         KafkaResponse restored = new Kafka(new TaskStorage(dataFile)).getResponse("list");
         assertFalse(restored.isError());
         assertTrue(restored.message().contains(expectedDisplay));
@@ -280,7 +330,7 @@ class KafkaTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "snooze 1 /by Sunday", "snooze 1 /from Monday", "snooze 2 /to Sunday",
+        "snooze 1 /by Sunday", "snooze 1 /from Monday", "snooze 1 /to Sunday", "snooze 2 /to Sunday",
         "snooze 3 /by Sunday", "snooze 4 /by Sunday", "snooze 2 /by",
         "snooze 3 /from Monday /to", "snooze 3 /to Tuesday /from Monday",
         "snooze 2 /by Sun | Mon", "rename 1", "rename 0 changed", "rename 4 changed",
@@ -298,6 +348,10 @@ class KafkaTest {
         KafkaResponse response = kafka.getResponse(command);
 
         assertTrue(response.isError(), command);
+        if (command.startsWith("snooze 1 ")) {
+            assertTrue(response.message().contains(
+                    "A todo cannot be snoozed because it has no date or time to change."));
+        }
         assertEquals(originalFile, Files.readString(dataFile));
         assertEquals(originalList, kafka.getResponse("list").message());
     }
@@ -313,9 +367,9 @@ class KafkaTest {
         assertFalse(kafka.getResponse("unmark 2").isError());
         assertFalse(kafka.getResponse("delete 1").isError());
 
-        assertEquals(List.of("T | 0 | second"), Files.readAllLines(dataFile));
+        assertEquals(List.of("T | 0 |  second"), Files.readAllLines(dataFile));
         KafkaResponse response = new Kafka(new TaskStorage(dataFile)).getResponse("list");
-        assertTrue(response.message().contains("1.[T][ ] second"));
+        assertTrue(response.message().contains("1.[T][ ]  second"));
         assertFalse(response.message().contains("first"));
     }
 
@@ -372,11 +426,11 @@ class KafkaTest {
         kafka.getResponse("todo another book");
 
         String matches = kafka.getResponse("find book").message();
-        assertTrue(matches.contains("2.[T][ ] read book"));
-        assertTrue(matches.contains("3.[T][ ] another book"));
-        assertTrue(kafka.getResponse("delete 2").message().contains("[T][ ] read book"));
+        assertTrue(matches.contains("2.[T][ ]  read book"));
+        assertTrue(matches.contains("3.[T][ ]  another book"));
+        assertTrue(kafka.getResponse("delete 2").message().contains("[T][ ]  read book"));
         String remaining = kafka.getResponse("list").message();
-        assertTrue(remaining.contains("1.[T][ ] buy milk"));
+        assertTrue(remaining.contains("1.[T][ ]  buy milk"));
         assertFalse(remaining.contains("read book"));
     }
 
@@ -505,7 +559,7 @@ class KafkaTest {
 
         assertTrue(output.contains("Please enter yes or no."));
         assertEquals(2, countOccurrences(output, "Overwrite it with an empty task list"));
-        assertEquals(List.of("T | 0 | recovered"), Files.readAllLines(dataFile));
+        assertEquals(List.of("T | 0 |  recovered"), Files.readAllLines(dataFile));
     }
 
     @ParameterizedTest

@@ -148,7 +148,20 @@ public class TaskStorage {
      */
     private String[] parseFields(String line, int lineNumber)
             throws CorruptedTaskDataException {
-        String[] fields = line.split("\\s*\\|\\s*", -1);
+        String[] fields = line.split("\\|", -1);
+        for (int i = 0; i < fields.length; i++) {
+            if (i == 2) {
+                // Remove only the single padding space written beside each storage separator.
+                if (fields[i].startsWith(" ")) {
+                    fields[i] = fields[i].substring(1);
+                }
+                if (i < fields.length - 1 && fields[i].endsWith(" ")) {
+                    fields[i] = fields[i].substring(0, fields[i].length() - 1);
+                }
+            } else {
+                fields[i] = fields[i].strip();
+            }
+        }
         if (fields.length < 3) {
             throw malformedLine(lineNumber);
         }

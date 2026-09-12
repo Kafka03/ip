@@ -11,7 +11,7 @@
     -fx-padding: 11px;
 }
 
-.text-field {
+.text-area {
     -fx-background-color: surface-color;
     -fx-background-radius: 0.5em;
     -fx-border-color: border-color;
@@ -67,3 +67,8 @@
     -fx-opacity: 0;
 }
 
+
+.text-area .content {
+    -fx-background-color: surface-color;
+    -fx-padding: 0;
+}

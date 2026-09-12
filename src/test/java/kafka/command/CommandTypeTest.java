@@ -28,6 +28,18 @@ class CommandTypeTest {
     }
 
     @ParameterizedTest
+    @EnumSource(value = CommandType.class, names = "UNKNOWN", mode = EnumSource.Mode.EXCLUDE)
+    void fromInput_surroundingWhitespace_returnsCommand(CommandType command) {
+        assertEquals(command, CommandType.fromInput(" \t\u2003" + command.keyword() + "\u2003\t "));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"todo\tread book", "todo\u2003read book", " todo  read book "})
+    void fromInput_whitespaceBeforeArguments_returnsCommand(String input) {
+        assertEquals(CommandType.TODO, CommandType.fromInput(input));
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"", "   ", "help", "Todo read book", "LIST", "todos", "snoozed 1 /by Sunday",
         "list extra", "bye extra"})
     void fromInput_unsupportedInput_returnsUnknown(String input) {

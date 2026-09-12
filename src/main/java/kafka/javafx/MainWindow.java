@@ -3,10 +3,13 @@ package kafka.javafx;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import kafka.Kafka;
@@ -22,7 +25,7 @@ public class MainWindow extends AnchorPane {
     @FXML
     private VBox dialogContainer;
     @FXML
-    private TextField userInput;
+    private TextArea userInput;
 
     private Kafka kafka;
 
@@ -38,6 +41,13 @@ public class MainWindow extends AnchorPane {
         assert dialogContainer != null : "FXML must inject dialogContainer";
         assert userInput != null : "FXML must inject userInput";
         scrollPane.vvalueProperty().bind(dialogContainer.heightProperty());
+        // TextArea retains literal tabs; Enter still submits a command instead of adding a line.
+        userInput.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                event.consume();
+                handleUserInput();
+            }
+        });
     }
 
     /**
@@ -86,6 +96,11 @@ public class MainWindow extends AnchorPane {
         confirmation.setTitle("Recover saved tasks");
         confirmation.setHeaderText("Your saved tasks could not be loaded");
         confirmation.initOwner(userInput.getScene().getWindow());
+        Button yesButton = (Button) confirmation.getDialogPane().lookupButton(ButtonType.YES);
+        Button noButton = (Button) confirmation.getDialogPane().lookupButton(ButtonType.NO);
+        yesButton.setDefaultButton(false);
+        noButton.setDefaultButton(true);
+        confirmation.setOnShown(event -> noButton.requestFocus());
         return confirmation.showAndWait().orElse(ButtonType.NO) == ButtonType.YES;
     }
 

@@ -17,6 +17,8 @@ public class TaskList {
             "(✿ヘᴥヘ) Only a deadline can be snoozed with /by.";
     private static final String NOT_EVENT_ERROR =
             "(✿ヘᴥヘ) Only an event can be snoozed with /from or /to.";
+    private static final String TODO_SNOOZE_ERROR =
+            "(⊃｡•́‿•̀｡)⊃ A todo can't be snoozed because it has no date or time to change";
     private static final String EMPTY_EVENT_SNOOZE_ASSERTION =
             "An event snooze must change at least one timestamp";
 
@@ -155,7 +157,7 @@ public class TaskList {
             throws KafkaException {
         Task task = getTask(taskNumber);
         if (!(task instanceof Deadline deadline)) {
-            throw new KafkaException(NOT_DEADLINE_ERROR);
+            throw new KafkaException(task instanceof Todo ? TODO_SNOOZE_ERROR : NOT_DEADLINE_ERROR);
         }
 
         String oldDisplay = deadline.display();
@@ -179,7 +181,7 @@ public class TaskList {
 
         Task task = getTask(taskNumber);
         if (!(task instanceof Event event)) {
-            throw new KafkaException(NOT_EVENT_ERROR);
+            throw new KafkaException(task instanceof Todo ? TODO_SNOOZE_ERROR : NOT_EVENT_ERROR);
         }
 
         String oldDisplay = event.display();
