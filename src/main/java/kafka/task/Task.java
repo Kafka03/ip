@@ -10,7 +10,7 @@ public abstract class Task {
     /**
      * Creates an unfinished task with the supplied name.
      *
-     * @param name description of the work to remember
+     * @param name Description of the work to remember.
      */
     protected Task(String name) {
         this.name = name;
@@ -47,7 +47,7 @@ public abstract class Task {
     /**
      * Builds the common checkbox and name shown for every task type.
      *
-     * @return checkbox followed by this task's name
+     * @return Checkbox followed by this task's name.
      */
     public String display() {
         String status = isDone ? "[X]" : "[ ]";
@@ -57,8 +57,8 @@ public abstract class Task {
     /**
      * Builds the storage fields shared by every concrete task type.
      *
-     * @param taskType one-letter code identifying the concrete task type
-     * @return type, completion state, and name in the storage format
+     * @param taskType One-letter code identifying the concrete task type.
+     * @return Type, completion state, and name in the storage format.
      */
     protected String toDataString(String taskType) {
         String status = isDone ? "1" : "0";
@@ -68,14 +68,14 @@ public abstract class Task {
     /**
      * Converts this task into one line in the task data file.
      *
-     * @return complete serialized form of this task
+     * @return Complete serialized form of this task.
      */
     public abstract String toDataString();
 
     /**
      * Replaces this task's name.
      *
-     * @param newName new name for this task
+     * @param newName New name for this task.
      */
     void rename(String newName) {
         name = newName;

@@ -17,6 +17,9 @@ import kafka.storage.TaskStorage;
  * Displays the JavaFX user interface for Kafka.
  */
 public class Main extends Application {
+    private static final double MIN_WINDOW_HEIGHT = 220.0;
+    private static final double MIN_WINDOW_WIDTH = 417.0;
+
     private InstanceLock instanceLock;
 
     @Override
@@ -44,8 +47,8 @@ public class Main extends Application {
 
         stage.setTitle("Kafka");
         stage.setResizable(true);
-        stage.setMinHeight(220.0);
-        stage.setMinWidth(417.0);
+        stage.setMinHeight(MIN_WINDOW_HEIGHT);
+        stage.setMinWidth(MIN_WINDOW_WIDTH);
         stage.setScene(scene);
         stage.show();
     }

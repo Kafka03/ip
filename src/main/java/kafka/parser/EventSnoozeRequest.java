@@ -5,11 +5,11 @@ import java.util.Optional;
 /**
  * Stores parsed changes to an event's schedule.
  *
- * @param taskNumber one-based number of the event to snooze
- * @param newFrom replacement start, if supplied
- * @param newTo replacement end, if supplied
+ * @param taskNumber One-based number of the event to snooze.
+ * @param newFrom Replacement start, if supplied.
+ * @param newTo Replacement end, if supplied.
  */
-public record SnoozeEventResult(
+public record EventSnoozeRequest(
         int taskNumber, Optional<String> newFrom, Optional<String> newTo)
         implements SnoozeRequest {
 }

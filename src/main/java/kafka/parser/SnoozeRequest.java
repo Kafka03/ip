@@ -7,7 +7,7 @@ public interface SnoozeRequest {
     /**
      * Returns the one-based number of the task to snooze.
      *
-     * @return selected task number
+     * @return Selected task number.
      */
     int taskNumber();
 }

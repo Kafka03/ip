@@ -5,9 +5,9 @@ import java.io.IOException;
 import kafka.command.CommandType;
 import kafka.exception.CorruptedTaskDataException;
 import kafka.exception.KafkaException;
+import kafka.parser.DeadlineSnoozeRequest;
+import kafka.parser.EventSnoozeRequest;
 import kafka.parser.RenameRequest;
-import kafka.parser.SnoozeDeadlineResult;
-import kafka.parser.SnoozeEventResult;
 import kafka.parser.SnoozeRequest;
 import kafka.parser.TaskParser;
 import kafka.storage.InstanceLock;
@@ -41,7 +41,7 @@ public class Kafka {
     /**
      * Creates Kafka with the specified task storage service.
      *
-     * @param taskStorage storage service Kafka should use for this session
+     * @param taskStorage Storage service Kafka should use for this session.
      */
     Kafka(TaskStorage taskStorage) {
         this.ui = new Ui();
@@ -53,7 +53,7 @@ public class Kafka {
     /**
      * Starts a Kafka session.
      *
-     * @param args command-line arguments; Kafka does not currently use them
+     * @param args Command-line arguments; Kafka does not currently use them.
      */
     public static void main(String[] args) {
         try (InstanceLock instanceLock = InstanceLock.acquire(new TaskStorage().getFilePath())) {
@@ -69,14 +69,14 @@ public class Kafka {
     void run() {
         ui.showResponse(ui.formatGreeting());
 
-        if (!loadTasks()) {
+        if (!canStartSession()) {
             ui.close();
             return;
         }
 
         while (true) {
             String input = ui.readCommand();
-            CommandType command = CommandType.fromInput(input);
+            CommandType command = CommandType.parseInput(input);
             if (command == CommandType.BYE) {
                 break;
             }
@@ -91,51 +91,50 @@ public class Kafka {
     /**
      * Loads stored tasks and safely handles a corrupted or unreadable file.
      *
-     * @return {@code true} when Kafka can proceed to its command loop
+     * @return {@code true} when Kafka can proceed to its command loop.
      */
-    private boolean loadTasks() {
+    private boolean canStartSession() {
         try {
-            tasks = taskStorage.load();
-            isLoaded = true;
+            ensureTasksLoaded();
             return true;
         } catch (CorruptedTaskDataException exception) {
-            ui.showResponse(ui.formatError(exception.getMessage()));
-            if (!ui.confirmStorageOverwrite(taskStorage.getFilePath())) {
-                ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
-                return false;
-            }
-
-            try {
-                taskStorage.save(tasks);
-                isLoaded = true;
-                ui.showResponse(ui.formatStorageOverwritten());
-                return true;
-            } catch (KafkaException saveException) {
-                ui.showResponse(ui.formatError(saveException.getMessage()));
-                ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
-                return false;
-            }
+            return canRecoverConsoleStorage(exception);
         } catch (KafkaException exception) {
-            ui.showResponse(ui.formatError(exception.getMessage()));
-            ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
+            ui.showResponse(formatStorageError(exception));
             return false;
         }
     }
 
     /**
+     * Prompts for recovery and reports whether the console session can continue.
+     */
+    private boolean canRecoverConsoleStorage(CorruptedTaskDataException exception) {
+        isRecoveryPending = true;
+        ui.showResponse(ui.formatError(exception.getMessage()));
+        if (!ui.shouldOverwriteStorage(taskStorage.getFilePath())) {
+            ui.showResponse(ui.formatStorageFileLocation(taskStorage.getFilePath()));
+            return false;
+        }
+
+        KafkaResponse response = recoverStorage();
+        ui.showResponse(response.message());
+        return !response.isError();
+    }
+
+    /**
      * Dispatches a recognized command to the corresponding handler.
      *
-     * @param command recognized command type
-     * @param input complete input containing any command arguments
-     * @param workingTasks task list on which to apply the command
-     * @throws KafkaException if parsing, task handling, or saving fails
+     * @param command Recognized command type.
+     * @param input Complete input containing any command arguments.
+     * @param workingTasks Task list on which to apply the command.
+     * @throws KafkaException If parsing, task handling, or saving fails.
      */
     private String processCommand(CommandType command, String input, TaskList workingTasks)
             throws KafkaException {
         assert isLoaded : "Tasks must be loaded before processing commands";
         assert command != null : "Command must be parsed before dispatch";
         assert command != CommandType.BYE
-            : "BYE must be handled before command dispatch";
+                : "BYE must be handled before command dispatch";
         return switch (command) {
             case LIST -> listTasks();
             case TODO -> addTodo(input, workingTasks);
@@ -147,7 +146,6 @@ public class Kafka {
             case RENAME -> renameTask(input, workingTasks);
             case SNOOZE -> snoozeTask(input, workingTasks);
             case FIND -> findTasks(input);
-            case UNKNOWN, BYE -> handleUnknownCommand();
             default -> handleUnknownCommand();
         };
     }
@@ -162,9 +160,9 @@ public class Kafka {
     /**
      * Parses and adds a todo.
      *
-     * @param input complete todo command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if parsing fails
+     * @param input Complete todo command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If parsing fails.
      */
     private String addTodo(String input, TaskList workingTasks) throws KafkaException {
         return addAndGetResponse(TaskParser.parseTodo(input), workingTasks);
@@ -173,9 +171,9 @@ public class Kafka {
     /**
      * Parses and adds a deadline.
      *
-     * @param input complete deadline command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if parsing fails
+     * @param input Complete deadline command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If parsing fails.
      */
     private String addDeadline(String input, TaskList workingTasks) throws KafkaException {
         return addAndGetResponse(TaskParser.parseDeadline(input), workingTasks);
@@ -184,9 +182,9 @@ public class Kafka {
     /**
      * Parses and adds an event.
      *
-     * @param input complete event command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if parsing fails
+     * @param input Complete event command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If parsing fails.
      */
     private String addEvent(String input, TaskList workingTasks) throws KafkaException {
         return addAndGetResponse(TaskParser.parseEvent(input), workingTasks);
@@ -195,8 +193,8 @@ public class Kafka {
     /**
      * Adds a task to the working list and prepares its confirmation.
      *
-     * @param task parsed task to add
-     * @param workingTasks task list to edit
+     * @param task Parsed task to add.
+     * @param workingTasks Task list to edit.
      */
     private String addAndGetResponse(Task task, TaskList workingTasks) {
         workingTasks.addTask(task);
@@ -206,12 +204,12 @@ public class Kafka {
     /**
      * Marks the task number supplied by the user.
      *
-     * @param input complete mark command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if the task number is invalid
+     * @param input Complete mark command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If the task number is invalid.
      */
     private String markTask(String input, TaskList workingTasks) throws KafkaException {
-        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.keyword());
+        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.MARK.getKeyword());
         Task markedTask = workingTasks.markTask(taskNumber);
         return ui.formatTaskMarked(markedTask.display());
     }
@@ -219,12 +217,12 @@ public class Kafka {
     /**
      * Unmarks the task number supplied by the user.
      *
-     * @param input complete unmark command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if the task number is invalid
+     * @param input Complete unmark command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If the task number is invalid.
      */
     private String unmarkTask(String input, TaskList workingTasks) throws KafkaException {
-        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.keyword());
+        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.UNMARK.getKeyword());
         Task unmarkedTask = workingTasks.unmarkTask(taskNumber);
         return ui.formatTaskUnmarked(unmarkedTask.display());
     }
@@ -232,12 +230,12 @@ public class Kafka {
     /**
      * Deletes the task number supplied by the user.
      *
-     * @param input complete delete command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if the task number is invalid
+     * @param input Complete delete command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If the task number is invalid.
      */
     private String deleteTask(String input, TaskList workingTasks) throws KafkaException {
-        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.DELETE.keyword());
+        int taskNumber = TaskParser.parseTaskNumber(input, CommandType.DELETE.getKeyword());
         Task deletedTask = workingTasks.deleteTask(taskNumber);
         return ui.formatTaskDeleted(deletedTask, workingTasks.size());
     }
@@ -245,9 +243,9 @@ public class Kafka {
     /**
      * Renames the task number supplied by the user.
      *
-     * @param input complete rename command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if the arguments or task number are invalid
+     * @param input Complete rename command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If the arguments or task number are invalid.
      */
     private String renameTask(String input, TaskList workingTasks) throws KafkaException {
         RenameRequest request = TaskParser.parseRename(input);
@@ -258,9 +256,9 @@ public class Kafka {
     /**
      * Reschedules the deadline or event selected by the user.
      *
-     * @param input complete snooze command
-     * @param workingTasks task list to edit
-     * @throws KafkaException if the arguments or selected task type are invalid
+     * @param input Complete snooze command.
+     * @param workingTasks Task list to edit.
+     * @throws KafkaException If the arguments or selected task type are invalid.
      */
     private String snoozeTask(String input, TaskList workingTasks) throws KafkaException {
         SnoozeRequest request = TaskParser.parseSnooze(input);
@@ -271,18 +269,18 @@ public class Kafka {
     /**
      * Applies a parsed deadline or event schedule change.
      *
-     * @param request parsed snooze request
-     * @param workingTasks task list to edit
-     * @return display snapshots from before and after rescheduling
-     * @throws KafkaException if the selected task has the wrong type
+     * @param request Parsed snooze request.
+     * @param workingTasks Task list to edit.
+     * @return Display snapshots from before and after rescheduling.
+     * @throws KafkaException If the selected task has the wrong type.
      */
     private SnoozeResult applySnooze(SnoozeRequest request, TaskList workingTasks) throws KafkaException {
-        if (request instanceof SnoozeDeadlineResult deadlineResult) {
-            return workingTasks.snoozeDeadline(deadlineResult.taskNumber(), deadlineResult.newBy());
+        if (request instanceof DeadlineSnoozeRequest deadlineRequest) {
+            return workingTasks.snoozeDeadline(deadlineRequest.taskNumber(), deadlineRequest.newBy());
         }
-        if (request instanceof SnoozeEventResult eventResult) {
+        if (request instanceof EventSnoozeRequest eventRequest) {
             return workingTasks.snoozeEvent(
-                    eventResult.taskNumber(), eventResult.newFrom(), eventResult.newTo());
+                    eventRequest.taskNumber(), eventRequest.newFrom(), eventRequest.newTo());
         }
         throw new KafkaException(UNSUPPORTED_SNOOZE_ERROR);
     }
@@ -291,8 +289,8 @@ public class Kafka {
      * Finds and displays tasks containing the keyword supplied by the user.
      * Searching does not change the task list, so no save is needed.
      *
-     * @param input complete find command
-     * @throws KafkaException if no search keyword was supplied
+     * @param input Complete find command.
+     * @throws KafkaException If no search keyword was supplied.
      */
     private String findTasks(String input) throws KafkaException {
         String keyword = TaskParser.parseFindKeyword(input);
@@ -309,12 +307,12 @@ public class Kafka {
     /**
      * Processes one command and returns its display message and error status.
      *
-     * @param input complete command entered by the user
-     * @return result containing the formatted message and its error status
+     * @param input Complete command entered by the user.
+     * @return Result containing the formatted message and its error status.
      */
     public KafkaResponse getResponse(String input) {
-        input = input.stripLeading();
-        CommandType command = CommandType.fromInput(input);
+        String normalizedInput = input.stripLeading();
+        CommandType command = CommandType.parseInput(normalizedInput);
 
         if (command == CommandType.BYE) {
             return new KafkaResponse(ui.formatFarewell(), false, KafkaResponse.Action.EXIT);
@@ -322,12 +320,7 @@ public class Kafka {
 
         try {
             ensureTasksLoaded();
-            TaskList workingTasks = command.modifiesTasks() ? tasks.copy() : tasks;
-            String message = processCommand(command, input, workingTasks);
-            if (command.modifiesTasks()) {
-                taskStorage.save(workingTasks);
-                tasks = workingTasks;
-            }
+            String message = executeCommand(command, normalizedInput);
             boolean isError = command == CommandType.UNKNOWN;
             return new KafkaResponse(message, isError);
         } catch (CorruptedTaskDataException exception) {
@@ -341,10 +334,24 @@ public class Kafka {
     }
 
     /**
+     * Applies a command and publishes task changes only after they are saved successfully.
+     * A copy keeps failed edits from changing the current in-memory tasks.
+     */
+    private String executeCommand(CommandType command, String input) throws KafkaException {
+        TaskList workingTasks = command.isTaskModification() ? tasks.copy() : tasks;
+        String message = processCommand(command, input, workingTasks);
+        if (command.isTaskModification()) {
+            taskStorage.save(workingTasks);
+            tasks = workingTasks;
+        }
+        return message;
+    }
+
+    /**
      * Replaces a corrupted file with an empty list after the user confirms recovery.
      * A failed save leaves recovery pending so the user can retry.
      *
-     * @return recovery confirmation or an error explaining why recovery failed
+     * @return Recovery confirmation or an error explaining why recovery failed.
      */
     public KafkaResponse recoverStorage() {
         if (!isRecoveryPending) {
@@ -373,7 +380,7 @@ public class Kafka {
     /**
      * Loads saved tasks once before processing GUI commands.
      *
-     * @throws KafkaException if the saved tasks cannot be loaded
+     * @throws KafkaException If the saved tasks cannot be loaded.
      */
     private void ensureTasksLoaded() throws KafkaException {
         if (isLoaded) {

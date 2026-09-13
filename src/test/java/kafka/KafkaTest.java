@@ -350,7 +350,7 @@ class KafkaTest {
         assertTrue(response.isError(), command);
         if (command.startsWith("snooze 1 ")) {
             assertTrue(response.message().contains(
-                    "A todo cannot be snoozed because it has no date or time to change."));
+                    "A todo can't be snoozed because it has no date or time to change"));
         }
         assertEquals(originalFile, Files.readString(dataFile));
         assertEquals(originalList, kafka.getResponse("list").message());
@@ -594,7 +594,7 @@ class KafkaTest {
     /**
      * Supplies bad commands alongside the one error each command should produce.
      *
-     * @return invalid commands and their matching user-facing errors
+     * @return Invalid commands and their matching user-facing errors.
      */
     private static Stream<Arguments> invalidInputsAndExpectedErrors() {
         return Stream.of(
@@ -614,9 +614,9 @@ class KafkaTest {
     /**
      * Counts non-overlapping appearances of one value in some text.
      *
-     * @param text complete text to search
-     * @param value value whose appearances should be counted
-     * @return number of non-overlapping appearances
+     * @param text Complete text to search.
+     * @param value Value whose appearances should be counted.
+     * @return Number of non-overlapping appearances.
      */
     private static int countOccurrences(String text, String value) {
         int count = 0;
@@ -631,8 +631,8 @@ class KafkaTest {
     /**
      * Runs one isolated Kafka session using temporary storage and captured output.
      *
-     * @param input newline-separated commands for the session
-     * @return everything Kafka printed during that session
+     * @param input Newline-separated commands for the session.
+     * @return Everything Kafka printed during that session.
      */
     private String runKafka(String input) {
         capturedOutput.reset();

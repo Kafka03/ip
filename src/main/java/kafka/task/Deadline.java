@@ -10,8 +10,8 @@ public class Deadline extends Task {
     /**
      * Creates an unfinished deadline.
      *
-     * @param description work that needs doing
-     * @param by display-ready date or time by which it should be done
+     * @param description Work that needs doing.
+     * @param by Display-ready date or time by which it should be done.
      */
     public Deadline(String description, String by) {
         super(description);
@@ -34,7 +34,7 @@ public class Deadline extends Task {
     /**
      * Adds the deadline marker and due value to the common task display.
      *
-     * @return display text beginning with {@code [D]}
+     * @return Display text beginning with {@code [D]}.
      */
     @Override
     public String display() {
@@ -44,7 +44,7 @@ public class Deadline extends Task {
     /**
      * Serializes this deadline for the task data file.
      *
-     * @return deadline data including its due value
+     * @return Deadline data including its due value.
      */
     @Override
     public String toDataString() {

@@ -7,7 +7,7 @@ public class CorruptedTaskDataException extends KafkaException {
     /**
      * Creates an error that identifies corrupted saved data.
      *
-     * @param message explanation of where the corrupted data was found
+     * @param message Explanation of where the corrupted data was found.
      */
     public CorruptedTaskDataException(String message) {
         super(message);

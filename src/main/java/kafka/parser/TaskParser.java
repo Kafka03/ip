@@ -1,8 +1,5 @@
 package kafka.parser;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
@@ -95,12 +92,12 @@ public final class TaskParser {
     /**
      * Parses a todo command into an unfinished todo, preserving all description whitespace.
      *
-     * @param input complete todo command entered by the user
-     * @return parsed todo, ready to join the task list
-     * @throws ParserException if the description is empty or unsafe to store
+     * @param input Complete todo command entered by the user.
+     * @return Parsed todo, ready to join the task list.
+     * @throws ParserException If the description is empty or unsafe to store.
      */
     public static Todo parseTodo(String input) throws ParserException {
-        String description = input.stripLeading().substring(CommandType.TODO.keyword().length());
+        String description = input.stripLeading().substring(CommandType.TODO.getKeyword().length());
         if (description.isBlank()) {
             throw new ParserException(TODO_DESCRIPTION_ERROR);
         }
@@ -111,12 +108,12 @@ public final class TaskParser {
     /**
      * Preserves deadline description whitespace and normalizes any recognized date or time.
      *
-     * @param input complete deadline command entered by the user
-     * @return parsed deadline with display-ready timing text
-     * @throws ParserException if its description, marker, or deadline is invalid
+     * @param input Complete deadline command entered by the user.
+     * @return Parsed deadline with display-ready timing text.
+     * @throws ParserException If its description, marker, or deadline is invalid.
      */
     public static Deadline parseDeadline(String input) throws ParserException {
-        String taskDetails = input.stripLeading().substring(CommandType.DEADLINE.keyword().length());
+        String taskDetails = input.stripLeading().substring(CommandType.DEADLINE.getKeyword().length());
         int byMarkerPosition = findUniqueMarker(taskDetails, BY_MARKER);
         String description = byMarkerPosition < 0
                 ? taskDetails
@@ -140,25 +137,15 @@ public final class TaskParser {
     /**
      * Preserves event description whitespace and parses its start and end values.
      *
-     * @param input complete event command entered by the user
-     * @return parsed event with normalized timing text where possible
-     * @throws ParserException if required details or markers are invalid
+     * @param input Complete event command entered by the user.
+     * @return Parsed event with normalized timing text where possible.
+     * @throws ParserException If required details or markers are invalid.
      */
     public static Event parseEvent(String input) throws ParserException {
-        String taskDetails = input.stripLeading().substring(CommandType.EVENT.keyword().length());
+        String taskDetails = input.stripLeading().substring(CommandType.EVENT.getKeyword().length());
         int fromMarkerPosition = findUniqueMarker(taskDetails, FROM_MARKER);
         int toMarkerPosition = findUniqueMarker(taskDetails, TO_MARKER);
-        int descriptionEnd = taskDetails.length();
-
-        // End the description at whichever valid marker appears first.
-        if (fromMarkerPosition >= 0) {
-            descriptionEnd = Math.min(descriptionEnd, fromMarkerPosition);
-        }
-        if (toMarkerPosition >= 0) {
-            descriptionEnd = Math.min(descriptionEnd, toMarkerPosition);
-        }
-
-        String description = taskDetails.substring(0, descriptionEnd);
+        String description = extractEventDescription(taskDetails, fromMarkerPosition, toMarkerPosition);
         if (description.isBlank()) {
             throw new ParserException(EMPTY_EVENT_DESCRIPTION_ERROR);
         }
@@ -177,10 +164,24 @@ public final class TaskParser {
     }
 
     /**
+     * Preserves description whitespace before the first event marker, even if markers are out of order.
+     */
+    private static String extractEventDescription(String taskDetails, int fromPosition, int toPosition) {
+        int descriptionEnd = taskDetails.length();
+        if (fromPosition >= 0) {
+            descriptionEnd = Math.min(descriptionEnd, fromPosition);
+        }
+        if (toPosition >= 0) {
+            descriptionEnd = Math.min(descriptionEnd, toPosition);
+        }
+        return taskDetails.substring(0, descriptionEnd);
+    }
+
+    /**
      * Rejects characters that would split a saved field or task record.
      *
-     * @param values user-provided values that will be written to storage
-     * @throws ParserException if a value contains a pipe or line break
+     * @param values User-provided values that will be written to storage.
+     * @throws ParserException If a value contains a pipe or line break.
      */
     private static void rejectStorageDelimiter(String... values) throws ParserException {
         for (String value : values) {
@@ -197,10 +198,10 @@ public final class TaskParser {
      * Finds a whitespace-delimited marker and rejects a second occurrence.
      * Substrings such as {@code /bytes} and {@code docs/from} remain ordinary text.
      *
-     * @param text command details to inspect
-     * @param marker exact marker token to locate
-     * @return marker position, or {@code -1} when absent
-     * @throws ParserException if the marker occurs more than once
+     * @param text Command details to inspect.
+     * @param marker Exact marker token to locate.
+     * @return Marker position, or {@code -1} when absent.
+     * @throws ParserException If the marker occurs more than once.
      */
     private static int findUniqueMarker(String text, String marker) throws ParserException {
         Pattern pattern = Pattern.compile("(?<!\\S)" + Pattern.quote(marker) + "(?!\\S)",
@@ -220,95 +221,63 @@ public final class TaskParser {
      * Converts a recognized date, time, or date-time into the standard display
      * format. Free-form text is preserved so values such as "Sunday" remain valid.
      *
-     * @param value raw date, time, date-time, or free-form timing text
-     * @return normalized timing text, or the original value when it is free-form
+     * @param value Raw date, time, date-time, or free-form timing text.
+     * @return Normalized timing text, or the original value when it is free-form.
      */
     private static String normalizeDateTime(String value) {
         String normalizedWhitespace = value.strip().replaceAll("\\p{javaWhitespace}+", " ");
 
-        Optional<String> normalizedDateTime = findNormalizedDateTime(normalizedWhitespace);
+        Optional<String> normalizedDateTime = findNormalizedTiming(
+                normalizedWhitespace, DATE_TIME_INPUT_FORMATTERS, DATE_TIME_OUTPUT_FORMATTER);
         if (normalizedDateTime.isPresent()) {
             return normalizedDateTime.get();
         }
 
-        Optional<String> normalizedDate = findNormalizedDate(normalizedWhitespace);
+        Optional<String> normalizedDate = findNormalizedTiming(
+                normalizedWhitespace, DATE_INPUT_FORMATTERS, DATE_OUTPUT_FORMATTER);
         if (normalizedDate.isPresent()) {
             return normalizedDate.get();
         }
 
-        Optional<String> normalizedTime = findNormalizedTime(normalizedWhitespace);
-        if (normalizedTime.isPresent()) {
-            return normalizedTime.get();
-        }
-
-        return value;
+        return findNormalizedTiming(normalizedWhitespace, TIME_INPUT_FORMATTERS, TIME_OUTPUT_FORMATTER)
+                .orElse(value);
     }
 
     /**
      * Finds impossible dates and times written in the supported numeric or English formats.
      * Free-form words are left alone, and matches retain their original positions for GUI styling.
      *
-     * @param timingText displayed deadline or event timing text.
-     * @return immutable matches identifying invalid date or time tokens.
+     * @param timingText Displayed deadline or event timing text.
+     * @return Immutable matches identifying invalid date or time tokens.
      */
     public static List<MatchResult> findInvalidDateTimes(String timingText) {
         return DATE_TIME_TOKEN.matcher(timingText).results()
                 .filter(match -> {
                     String value = match.group().replaceAll("\\p{javaWhitespace}+", " ");
-                    return findNormalizedDate(value).isEmpty() && findNormalizedTime(value).isEmpty();
+                    boolean isValidDate = findNormalizedTiming(value, DATE_INPUT_FORMATTERS,
+                            DATE_OUTPUT_FORMATTER).isPresent();
+                    boolean isValidTime = findNormalizedTiming(value, TIME_INPUT_FORMATTERS,
+                            TIME_OUTPUT_FORMATTER).isPresent();
+                    return !isValidDate && !isValidTime;
                 })
                 .toList();
     }
 
     /**
-     * Returns the normalized date-time accepted by the first matching format.
+     * Returns timing text normalized by the first matching input format.
      *
-     * @param value Date-time text to parse.
-     * @return Normalized date-time, or an empty result if no format matches.
+     * @param value Date, time, or date-time text to parse.
+     * @param inputFormatters Accepted formats in order of preference.
+     * @param outputFormatter Format used to display a successfully parsed value.
+     * @return Normalized timing text, or an empty result if no format matches.
      */
-    private static Optional<String> findNormalizedDateTime(String value) {
-        for (DateTimeFormatter formatter : DATE_TIME_INPUT_FORMATTERS) {
+    private static Optional<String> findNormalizedTiming(String value,
+            List<DateTimeFormatter> inputFormatters, DateTimeFormatter outputFormatter) {
+        for (DateTimeFormatter inputFormatter : inputFormatters) {
             try {
-                LocalDateTime dateTime = LocalDateTime.parse(value, formatter);
-                return Optional.of(dateTime.format(DATE_TIME_OUTPUT_FORMATTER));
+                return Optional.of(outputFormatter.format(inputFormatter.parse(value)));
             } catch (DateTimeParseException ignored) {
-                continue;
-            }
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Returns the normalized date accepted by the first matching format.
-     *
-     * @param value Date text to parse.
-     * @return Normalized date, or an empty result if no format matches.
-     */
-    private static Optional<String> findNormalizedDate(String value) {
-        for (DateTimeFormatter formatter : DATE_INPUT_FORMATTERS) {
-            try {
-                LocalDate date = LocalDate.parse(value, formatter);
-                return Optional.of(date.format(DATE_OUTPUT_FORMATTER));
-            } catch (DateTimeParseException ignored) {
-                continue;
-            }
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Returns the normalized time accepted by the first matching format.
-     *
-     * @param value Time text to parse.
-     * @return Normalized time, or an empty result if no format matches.
-     */
-    private static Optional<String> findNormalizedTime(String value) {
-        for (DateTimeFormatter formatter : TIME_INPUT_FORMATTERS) {
-            try {
-                LocalTime time = LocalTime.parse(value, formatter);
-                return Optional.of(time.format(TIME_OUTPUT_FORMATTER));
-            } catch (DateTimeParseException ignored) {
-                continue;
+                // A value may match a later format or be intentionally free-form text.
             }
         }
         return Optional.empty();
@@ -317,8 +286,8 @@ public final class TaskParser {
     /**
      * Creates strict, case-insensitive formatters for the supplied patterns.
      *
-     * @param patterns date or time patterns to compile
-     * @return immutable list of ready-to-use formatters
+     * @param patterns Date or time patterns to compile.
+     * @return Immutable list of ready-to-use formatters.
      */
     private static List<DateTimeFormatter> createFormatters(List<String> patterns) {
         return patterns.stream()
@@ -329,7 +298,7 @@ public final class TaskParser {
     /**
      * Creates every supported pairing of a date pattern and a time pattern.
      *
-     * @return immutable list of supported date-time formatters
+     * @return Immutable list of supported date-time formatters.
      */
     private static List<DateTimeFormatter> createDateTimeFormatters() {
         List<DateTimeFormatter> formatters = new ArrayList<>();
@@ -344,8 +313,8 @@ public final class TaskParser {
     /**
      * Creates one strict, English, case-insensitive formatter.
      *
-     * @param pattern pattern understood by {@link DateTimeFormatter}
-     * @return formatter configured for reliable input validation
+     * @param pattern Pattern understood by {@link DateTimeFormatter}.
+     * @return Formatter configured for reliable input validation.
      */
     private static DateTimeFormatter createFormatter(String pattern) {
         return new DateTimeFormatterBuilder()
@@ -358,10 +327,10 @@ public final class TaskParser {
     /**
      * Parses a positive one-based task number from a task-selection command.
      *
-     * @param input complete mark, unmark, or delete command
-     * @param command command keyword to remove before reading the number
-     * @return positive task number supplied by the user
-     * @throws ParserException if the value is not a positive whole number
+     * @param input Complete mark, unmark, or delete command.
+     * @param command Command keyword to remove before reading the number.
+     * @return Positive task number supplied by the user.
+     * @throws ParserException If the value is not a positive whole number.
      */
     public static int parseTaskNumber(String input, String command) throws ParserException {
         String numberText = input.substring(command.length()).strip();
@@ -371,12 +340,12 @@ public final class TaskParser {
     /**
      * Parses a rename command, preserving all whitespace after the task number.
      *
-     * @param input complete rename command entered by the user
-     * @return task number and replacement name
-     * @throws ParserException if the number or replacement name is invalid
+     * @param input Complete rename command entered by the user.
+     * @return Task number and replacement name.
+     * @throws ParserException If the number or replacement name is invalid.
      */
     public static RenameRequest parseRename(String input) throws ParserException {
-        String arguments = input.stripLeading().substring(CommandType.RENAME.keyword().length()).stripLeading();
+        String arguments = input.stripLeading().substring(CommandType.RENAME.getKeyword().length()).stripLeading();
         int nameStart = 0;
         while (nameStart < arguments.length() && !Character.isWhitespace(arguments.charAt(nameStart))) {
             nameStart++;
@@ -394,9 +363,9 @@ public final class TaskParser {
     /**
      * Parses a positive task number from its text representation.
      *
-     * @param numberText task number without its command keyword
-     * @return positive task number
-     * @throws ParserException if the text is not a positive whole number
+     * @param numberText Task number without its command keyword.
+     * @return Positive task number.
+     * @throws ParserException If the text is not a positive whole number.
      */
     private static int parsePositiveTaskNumber(String numberText) throws ParserException {
         try {
@@ -413,12 +382,12 @@ public final class TaskParser {
     /**
      * Parses a deadline or event snooze command.
      *
-     * @param input complete snooze command entered by the user
-     * @return parsed deadline or event schedule change
-     * @throws ParserException if the task number, markers, or values are invalid
+     * @param input Complete snooze command entered by the user.
+     * @return Parsed deadline or event schedule change.
+     * @throws ParserException If the task number, markers, or values are invalid.
      */
     public static SnoozeRequest parseSnooze(String input) throws ParserException {
-        String arguments = input.substring(CommandType.SNOOZE.keyword().length()).strip();
+        String arguments = input.substring(CommandType.SNOOZE.getKeyword().length()).strip();
         String[] parts = arguments.split("\\p{javaWhitespace}+", 2);
         if (parts.length < 2) {
             throw new ParserException(SNOOZE_ARGUMENTS_ERROR);
@@ -438,12 +407,12 @@ public final class TaskParser {
     /**
      * Parses the replacement value from a deadline snooze.
      *
-     * @param taskNumber one-based task number
-     * @param schedule schedule portion beginning with {@code /by}
-     * @return parsed deadline schedule change
-     * @throws ParserException if the marker combination or value is invalid
+     * @param taskNumber One-based task number.
+     * @param schedule Schedule portion beginning with {@code /by}.
+     * @return Parsed deadline schedule change.
+     * @throws ParserException If the marker combination or value is invalid.
      */
-    private static SnoozeDeadlineResult parseDeadlineSnooze(
+    private static DeadlineSnoozeRequest parseDeadlineSnooze(
             int taskNumber, String schedule) throws ParserException {
         if (findUniqueMarker(schedule, FROM_MARKER) >= 0 || findUniqueMarker(schedule, TO_MARKER) >= 0) {
             throw new ParserException(INVALID_SNOOZE_MARKERS_ERROR);
@@ -451,18 +420,18 @@ public final class TaskParser {
 
         String newBy = schedule.substring(BY_MARKER.length()).strip();
         validateSnoozeValue(newBy);
-        return new SnoozeDeadlineResult(taskNumber, normalizeDateTime(newBy));
+        return new DeadlineSnoozeRequest(taskNumber, normalizeDateTime(newBy));
     }
 
     /**
      * Parses one or both replacement values from an event snooze.
      *
-     * @param taskNumber one-based task number
-     * @param schedule schedule portion beginning with {@code /from} or {@code /to}
-     * @return parsed event schedule change
-     * @throws ParserException if the marker combination or values are invalid
+     * @param taskNumber One-based task number.
+     * @param schedule Schedule portion beginning with {@code /from} or {@code /to}.
+     * @return Parsed event schedule change.
+     * @throws ParserException If the marker combination or values are invalid.
      */
-    private static SnoozeEventResult parseEventSnooze(
+    private static EventSnoozeRequest parseEventSnooze(
             int taskNumber, String schedule) throws ParserException {
         if (findUniqueMarker(schedule, BY_MARKER) >= 0) {
             throw new ParserException(INVALID_SNOOZE_MARKERS_ERROR);
@@ -477,18 +446,18 @@ public final class TaskParser {
         Optional<String> newFrom = parseNewFrom(schedule, fromPosition, toPosition);
         Optional<String> newTo = parseNewTo(schedule, toPosition);
         assert newFrom.isPresent() || newTo.isPresent()
-        : "A parsed event snooze must include at least one timestamp";
-        return new SnoozeEventResult(taskNumber, newFrom, newTo);
+                : "A parsed event snooze must include at least one timestamp";
+        return new EventSnoozeRequest(taskNumber, newFrom, newTo);
     }
 
     /**
      * Extracts and normalizes a replacement event start when supplied.
      *
-     * @param schedule event schedule arguments
-     * @param fromPosition position of {@code /from}, or {@code -1}
-     * @param toPosition position of {@code /to}, or {@code -1}
-     * @return replacement start, if supplied
-     * @throws ParserException if the replacement is empty or unsafe to store
+     * @param schedule Event schedule arguments.
+     * @param fromPosition Position of {@code /from}, or {@code -1}.
+     * @param toPosition Position of {@code /to}, or {@code -1}.
+     * @return Replacement start, if supplied.
+     * @throws ParserException If the replacement is empty or unsafe to store.
      */
     private static Optional<String> parseNewFrom(
             String schedule, int fromPosition, int toPosition) throws ParserException {
@@ -505,10 +474,10 @@ public final class TaskParser {
     /**
      * Extracts and normalizes a replacement event end when supplied.
      *
-     * @param schedule event schedule arguments
-     * @param toPosition position of {@code /to}, or {@code -1}
-     * @return replacement end, if supplied
-     * @throws ParserException if the replacement is empty or unsafe to store
+     * @param schedule Event schedule arguments.
+     * @param toPosition Position of {@code /to}, or {@code -1}.
+     * @return Replacement end, if supplied.
+     * @throws ParserException If the replacement is empty or unsafe to store.
      */
     private static Optional<String> parseNewTo(String schedule, int toPosition)
             throws ParserException {
@@ -524,8 +493,8 @@ public final class TaskParser {
     /**
      * Checks that a replacement schedule value is present and safe to store.
      *
-     * @param value replacement date or time
-     * @throws ParserException if the replacement is empty or unsafe to store
+     * @param value Replacement date or time.
+     * @throws ParserException If the replacement is empty or unsafe to store.
      */
     private static void validateSnoozeValue(String value) throws ParserException {
         if (value.isBlank()) {
@@ -537,12 +506,12 @@ public final class TaskParser {
     /**
      * Extracts the non-empty keyword from a find command.
      *
-     * @param input complete find command entered by the user
-     * @return keyword to look for in the task list
-     * @throws ParserException if no keyword was supplied
+     * @param input Complete find command entered by the user.
+     * @return Keyword to look for in the task list.
+     * @throws ParserException If no keyword was supplied.
      */
     public static String parseFindKeyword(String input) throws ParserException {
-        String keyword = input.substring(CommandType.FIND.keyword().length()).strip();
+        String keyword = input.substring(CommandType.FIND.getKeyword().length()).strip();
         if (keyword.isEmpty()) {
             throw new ParserException(EMPTY_FIND_KEYWORD_ERROR);
         }

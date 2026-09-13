@@ -18,6 +18,7 @@ import kafka.parser.TaskParser;
 import kafka.storage.TaskStorage;
 import kafka.task.Deadline;
 import kafka.task.Event;
+import kafka.task.SnoozeResult;
 import kafka.task.Task;
 import kafka.task.TaskList;
 import kafka.task.Todo;
@@ -179,7 +180,7 @@ class MessageTextFormatterTest {
     void formatResponse_correctedTiming_removesWarningFromNewSnapshot() throws Exception {
         TaskList tasks = new TaskList();
         tasks.addTask(TaskParser.parseDeadline("deadline report /by 2026-02-30"));
-        var result = tasks.snoozeDeadline(1, "1 Mar 2026");
+        SnoozeResult result = tasks.snoozeDeadline(1, "1 Mar 2026");
         Ui ui = new Ui();
 
         assertInvalidValues(ui.formatTaskSnoozed(result.oldDisplay(), result.newDisplay()), List.of("2026-02-30"));

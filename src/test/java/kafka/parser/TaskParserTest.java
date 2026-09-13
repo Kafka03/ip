@@ -262,7 +262,7 @@ class TaskParserTest {
     @ParameterizedTest
     @CsvSource({"2024-02-29 12pm, 29 Feb 2024 1200", "next Sunday, next Sunday"})
     void parseSnooze_deadline_returnsNormalizedReplacement(String input, String expected) throws ParserException {
-        assertEquals(new SnoozeDeadlineResult(2, expected), TaskParser.parseSnooze("snooze   2   /by " + input));
+        assertEquals(new DeadlineSnoozeRequest(2, expected), TaskParser.parseSnooze("snooze   2   /by " + input));
     }
 
     @ParameterizedTest
@@ -273,7 +273,7 @@ class TaskParserTest {
     })
     void parseSnooze_event_returnsOnlySuppliedEndpoints(String schedule, String from, String to)
             throws ParserException {
-        assertEquals(new SnoozeEventResult(3, Optional.ofNullable(from), Optional.ofNullable(to)),
+        assertEquals(new EventSnoozeRequest(3, Optional.ofNullable(from), Optional.ofNullable(to)),
                 TaskParser.parseSnooze("snooze 3 " + schedule));
     }
 
@@ -310,9 +310,9 @@ class TaskParserTest {
 
     @Test
     void parseSnooze_markerSubstrings_preservesTiming() throws ParserException {
-        assertEquals(new SnoozeDeadlineResult(1, "tomorrow/today"),
+        assertEquals(new DeadlineSnoozeRequest(1, "tomorrow/today"),
                 TaskParser.parseSnooze("snooze 1 /by tomorrow/today"));
-        assertEquals(new SnoozeEventResult(2, Optional.of("/bytes"), Optional.empty()),
+        assertEquals(new EventSnoozeRequest(2, Optional.of("/bytes"), Optional.empty()),
                 TaskParser.parseSnooze("snooze 2 /from /bytes"));
     }
 

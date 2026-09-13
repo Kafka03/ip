@@ -211,7 +211,7 @@ class TaskStorageTest {
     /**
      * Supplies malformed records that should all trigger the same safe failure path.
      *
-     * @return invalid storage records for the parameterized loading test
+     * @return Invalid storage records for the parameterized loading test.
      */
     private static Stream<Arguments> invalidStorageRecords() {
         return Stream.of(

@@ -3,9 +3,9 @@ package kafka;
 /**
  * Represents the result of processing one user command.
  *
- * @param message formatted response to display
- * @param isError whether the response represents an error
- * @param action follow-up action for the user interface
+ * @param message Formatted response to display.
+ * @param isError Whether the response represents an error.
+ * @param action Follow-up action for the user interface.
  */
 public record KafkaResponse(String message, boolean isError, Action action) {
     /**

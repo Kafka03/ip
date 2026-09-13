@@ -22,13 +22,13 @@ public class TaskList {
     private static final String EMPTY_EVENT_SNOOZE_ASSERTION =
             "An event snooze must change at least one timestamp";
 
-    private final List<Task> taskList;
+    private final List<Task> tasks;
 
     /**
      * Creates an empty task list.
      */
     public TaskList() {
-        taskList = new ArrayList<>();
+        tasks = new ArrayList<>();
     }
 
     /**
@@ -36,7 +36,7 @@ public class TaskList {
      */
     public TaskList copy() {
         TaskList copiedTasks = new TaskList();
-        for (Task task : taskList) {
+        for (Task task : tasks) {
             copiedTasks.addTask(task.copy());
         }
         return copiedTasks;
@@ -45,60 +45,61 @@ public class TaskList {
     /**
      * Adds a task to the end of the list.
      *
-     * @param task task to remember
+     * @param task Task to remember.
      */
     public void addTask(Task task) {
-        taskList.add(task);
+        tasks.add(task);
     }
 
     /**
      * Deletes the task at the user-facing one-based position.
      *
-     * @param taskNumber one-based number of the task to delete
-     * @return task removed from the list
-     * @throws KafkaException if no task has that number
+     * @param taskNumber One-based number of the task to delete.
+     * @return Task removed from the list.
+     * @throws KafkaException If no task has that number.
      */
     public Task deleteTask(int taskNumber) throws KafkaException {
-        return taskList.remove(getTaskIndex(taskNumber));
+        return tasks.remove(getTaskIndex(taskNumber));
     }
 
     /**
      * Returns the number of tasks in the list.
      *
-     * @return number of stored tasks
+     * @return Number of stored tasks.
      */
     public int size() {
-        return taskList.size();
+        return tasks.size();
     }
 
     /**
      * Reports whether the list has no tasks waiting in it.
      *
-     * @return {@code true} when the list contains no tasks
+     * @return {@code true} when the list contains no tasks.
      */
     public boolean isEmpty() {
-        return taskList.isEmpty();
+        return tasks.isEmpty();
     }
 
     /**
-     * Returns a read-only snapshot for storage without exposing the mutable list.
+     * Returns an unmodifiable snapshot of list membership, sharing the existing task objects.
+     * Use {@link #copy()} when task edits must be independent of this list.
      *
-     * @return immutable copy of the tasks in list order
+     * @return Unmodifiable list of the current task references in list order.
      */
     public List<Task> getTasks() {
-        return List.copyOf(taskList);
+        return List.copyOf(tasks);
     }
 
     /**
      * Finds tasks whose displayed text contains the supplied keyword.
      * Matching ignores letter case and preserves the tasks' original order.
      *
-     * @param keyword text to search for
-     * @return immutable list of matching tasks in their original order
+     * @param keyword Text to search for.
+     * @return Immutable list of matching tasks in their original order.
      */
     public List<Task> findTasks(String keyword) {
         String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
-        return taskList.stream()
+        return tasks.stream()
                 .filter(task -> task.display().toLowerCase(Locale.ROOT)
                         .contains(normalizedKeyword))
                 .toList();
@@ -107,9 +108,9 @@ public class TaskList {
     /**
      * Marks the task at the user-facing one-based position as completed.
      *
-     * @param taskNumber one-based number of the task to mark
-     * @return task that was marked
-     * @throws KafkaException if no task has that number
+     * @param taskNumber One-based number of the task to mark.
+     * @return Task that was marked.
+     * @throws KafkaException If no task has that number.
      */
     public Task markTask(int taskNumber) throws KafkaException {
         Task task = getTask(taskNumber);
@@ -120,9 +121,9 @@ public class TaskList {
     /**
      * Marks the task at the user-facing one-based position as incomplete.
      *
-     * @param taskNumber one-based number of the task to unmark
-     * @return task that was unmarked
-     * @throws KafkaException if no task has that number
+     * @param taskNumber One-based number of the task to unmark.
+     * @return Task that was unmarked.
+     * @throws KafkaException If no task has that number.
      */
     public Task unmarkTask(int taskNumber) throws KafkaException {
         Task task = getTask(taskNumber);
@@ -133,10 +134,10 @@ public class TaskList {
     /**
      * Renames the task at the specified one-based position.
      *
-     * @param taskNumber one-based task number
-     * @param newName replacement task name
-     * @return display snapshots from before and after the rename
-     * @throws KafkaException if no task has that number
+     * @param taskNumber One-based task number.
+     * @param newName Replacement task name.
+     * @return Display snapshots from before and after the rename.
+     * @throws KafkaException If no task has that number.
      */
     public RenameResult renameTask(int taskNumber, String newName) throws KafkaException {
         Task task = getTask(taskNumber);
@@ -148,10 +149,10 @@ public class TaskList {
     /**
      * Reschedules the deadline at the specified one-based position.
      *
-     * @param taskNumber one-based task number
-     * @param newBy replacement deadline
-     * @return display snapshots from before and after rescheduling
-     * @throws KafkaException if the selected task is absent or is not a deadline
+     * @param taskNumber One-based task number.
+     * @param newBy Replacement deadline.
+     * @return Display snapshots from before and after rescheduling.
+     * @throws KafkaException If the selected task is absent or is not a deadline.
      */
     public SnoozeResult snoozeDeadline(int taskNumber, String newBy)
             throws KafkaException {
@@ -168,11 +169,11 @@ public class TaskList {
     /**
      * Reschedules one or both endpoints of the event at the specified position.
      *
-     * @param taskNumber one-based task number
-     * @param newFrom replacement start, if supplied
-     * @param newTo replacement end, if supplied
-     * @return display snapshots from before and after rescheduling
-     * @throws KafkaException if the selected task is absent or is not an event
+     * @param taskNumber One-based task number.
+     * @param newFrom Replacement start, if supplied.
+     * @param newTo Replacement end, if supplied.
+     * @return Display snapshots from before and after rescheduling.
+     * @throws KafkaException If the selected task is absent or is not an event.
      */
     public SnoozeResult snoozeEvent(int taskNumber, Optional<String> newFrom,
             Optional<String> newTo) throws KafkaException {
@@ -193,23 +194,23 @@ public class TaskList {
     /**
      * Finds the task at a user-facing one-based position.
      *
-     * @param taskNumber one-based number of the requested task
-     * @return matching task
-     * @throws KafkaException if no task has that number
+     * @param taskNumber One-based number of the requested task.
+     * @return Matching task.
+     * @throws KafkaException If no task has that number.
      */
     private Task getTask(int taskNumber) throws KafkaException {
-        return taskList.get(getTaskIndex(taskNumber));
+        return tasks.get(getTaskIndex(taskNumber));
     }
 
     /**
      * Validates a user-facing task number and converts it to a zero-based index.
      *
-     * @param taskNumber one-based number supplied by the user
-     * @return matching zero-based list index
-     * @throws KafkaException if no task has that number
+     * @param taskNumber One-based number supplied by the user.
+     * @return Matching zero-based list index.
+     * @throws KafkaException If no task has that number.
      */
     private int getTaskIndex(int taskNumber) throws KafkaException {
-        if (taskNumber < 1 || taskNumber > taskList.size()) {
+        if (taskNumber < 1 || taskNumber > tasks.size()) {
             throw new KafkaException(TASK_NOT_FOUND_ERROR);
         }
         return taskNumber - 1;

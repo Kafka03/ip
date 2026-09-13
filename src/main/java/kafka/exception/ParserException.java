@@ -7,7 +7,7 @@ public class ParserException extends KafkaException {
     /**
      * Creates a parser error with guidance for the user.
      *
-     * @param message explanation of what was wrong with the command
+     * @param message Explanation of what was wrong with the command.
      */
     public ParserException(String message) {
         super(message);
