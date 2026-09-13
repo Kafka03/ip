@@ -2,6 +2,8 @@
 
 Kafka is a task manager that supports both command-line and JavaFX user interfaces.
 
+See the [Kafka User Guide](docs/README.md) for setup, commands, and examples.
+
 ## Setting up in Intellij
 
 Prerequisites: JDK 25, update Intellij to the most recent version.
