@@ -170,6 +170,24 @@ class TaskStorageTest {
     }
 
     @Test
+    void save_failedReplacement_preservesDestinationAndRemovesTemporaryFile() throws IOException {
+        Path destination = temporaryDirectory.resolve("tasks.txt");
+        Files.createDirectory(destination);
+        Path existingFile = destination.resolve("keep.txt");
+        Files.writeString(existingFile, "keep me");
+        TaskStorage storage = new TaskStorage(destination);
+        TaskList tasks = new TaskList();
+        tasks.addTask(new Todo("new task"));
+
+        assertThrows(KafkaException.class, () -> storage.save(tasks));
+
+        assertEquals("keep me", Files.readString(existingFile));
+        try (Stream<Path> files = Files.list(temporaryDirectory)) {
+            assertEquals(List.of(destination), files.toList());
+        }
+    }
+
+    @Test
     void getFilePath_redundantSegments_returnsNormalizedAbsolutePath() {
         TaskStorage storage = new TaskStorage(temporaryDirectory.resolve("data").resolve("..").resolve("kafka.txt"));
 
@@ -193,7 +211,7 @@ class TaskStorageTest {
     /**
      * Supplies malformed records that should all trigger the same safe failure path.
      *
-     * @return invalid storage records for the parameterized loading test
+     * @return Invalid storage records for the parameterized loading test.
      */
     private static Stream<Arguments> invalidStorageRecords() {
         return Stream.of(

@@ -7,7 +7,7 @@ public class KafkaException extends Exception {
     /**
      * Creates an expected error with a user-facing explanation.
      *
-     * @param message explanation Kafka should show the user
+     * @param message Explanation Kafka should show the user.
      */
     public KafkaException(String message) {
         super(message);
@@ -16,8 +16,8 @@ public class KafkaException extends Exception {
     /**
      * Creates an expected error while preserving the technical cause for debugging.
      *
-     * @param message explanation Kafka should show the user
-     * @param cause lower-level problem that caused this error
+     * @param message Explanation Kafka should show the user.
+     * @param cause Lower-level problem that caused this error.
      */
     public KafkaException(String message, Throwable cause) {
         super(message, cause);

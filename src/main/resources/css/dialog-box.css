@@ -45,6 +45,10 @@
     -fx-font-weight: bold;
 }
 
+.dialog-text .task-invalid-date {
+    -fx-fill: #ff737e;
+}
+
 .error-label Text {
     -fx-fill: #ff8a94;
 }

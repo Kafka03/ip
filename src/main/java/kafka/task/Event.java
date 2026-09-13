@@ -11,9 +11,9 @@ public class Event extends Task {
     /**
      * Creates an unfinished event.
      *
-     * @param description activity taking place
-     * @param from display-ready start date or time
-     * @param to display-ready end date or time
+     * @param description Activity taking place.
+     * @param from Display-ready start date or time.
+     * @param to Display-ready end date or time.
      */
     public Event(String description, String from, String to) {
         super(description);
@@ -22,9 +22,23 @@ public class Event extends Task {
     }
 
     /**
+     * Copies an event for an edit that has not yet been saved.
+     */
+    private Event(Event source) {
+        super(source);
+        this.from = source.from;
+        this.to = source.to;
+    }
+
+    @Override
+    Task copy() {
+        return new Event(this);
+    }
+
+    /**
      * Adds the event marker and time range to the common task display.
      *
-     * @return display text beginning with {@code [E]}
+     * @return Display text beginning with {@code [E]}.
      */
     @Override
     public String display() {
@@ -34,7 +48,7 @@ public class Event extends Task {
     /**
      * Serializes this event for the task data file.
      *
-     * @return event data including its start and end values
+     * @return Event data including its start and end values.
      */
     @Override
     public String toDataString() {

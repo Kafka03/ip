@@ -30,42 +30,61 @@ public enum CommandType {
     UNKNOWN("", false);
 
     private final String keyword;
-    private final boolean acceptsArguments;
+    private final boolean canAcceptArguments;
 
-    CommandType(String keyword, boolean acceptsArguments) {
+    CommandType(String keyword, boolean canAcceptArguments) {
         this.keyword = keyword;
-        this.acceptsArguments = acceptsArguments;
+        this.canAcceptArguments = canAcceptArguments;
     }
 
     /**
      * Returns the keyword used to invoke this command.
      *
-     * @return this command's lowercase keyword
+     * @return This command's lowercase keyword.
      */
-    public String keyword() {
+    public String getKeyword() {
         return keyword;
+    }
+
+    /**
+     * Reports whether this command edits tasks and therefore needs a successful save.
+     */
+    public boolean isTaskModification() {
+        return switch (this) {
+            case TODO, DEADLINE, EVENT, MARK, UNMARK, DELETE, RENAME, SNOOZE -> true;
+            default -> false;
+        };
     }
 
     /**
      * Identifies the command at the start of the user's input.
      * Argument-free commands must appear alone, while the others may be followed
-     * by a space and their details.
+     * by whitespace and their details. Surrounding whitespace is ignored.
      *
-     * @param input complete command entered by the user
-     * @return the matching command, or {@link #UNKNOWN} when nothing matches
+     * @param input Complete command entered by the user.
+     * @return The matching command, or {@link #UNKNOWN} when nothing matches.
      */
-    public static CommandType fromInput(String input) {
+    public static CommandType parseInput(String input) {
+        String normalizedInput = input.strip();
         for (CommandType command : values()) {
             if (command == UNKNOWN) {
                 continue;
             }
-            boolean matchesKeyword = input.equals(command.keyword);
-            boolean matchesCommandWithArguments = command.acceptsArguments
-                    && input.startsWith(command.keyword + " ");
-            if (matchesKeyword || matchesCommandWithArguments) {
+            boolean isKeywordMatch = normalizedInput.equals(command.keyword);
+            if (isKeywordMatch || command.hasMatchingArguments(normalizedInput)) {
                 return command;
             }
         }
         return UNKNOWN;
+    }
+
+    /**
+     * Checks that arguments follow this command's keyword with a whitespace separator.
+     */
+    private boolean hasMatchingArguments(String input) {
+        if (!canAcceptArguments || !input.startsWith(keyword) || input.length() <= keyword.length()) {
+            return false;
+        }
+        return Character.isWhitespace(input.charAt(keyword.length()));
     }
 }

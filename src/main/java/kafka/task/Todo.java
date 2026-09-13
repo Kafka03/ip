@@ -7,16 +7,28 @@ public class Todo extends Task {
     /**
      * Creates an unfinished todo.
      *
-     * @param description work the user wants Kafka to remember
+     * @param description Work the user wants Kafka to remember.
      */
     public Todo(String description) {
         super(description);
     }
 
     /**
+     * Copies a todo for an edit that has not yet been saved.
+     */
+    private Todo(Todo source) {
+        super(source);
+    }
+
+    @Override
+    Task copy() {
+        return new Todo(this);
+    }
+
+    /**
      * Adds the todo marker to the common task display.
      *
-     * @return display text beginning with {@code [T]}
+     * @return Display text beginning with {@code [T]}.
      */
     @Override
     public String display() {
@@ -26,7 +38,7 @@ public class Todo extends Task {
     /**
      * Serializes this todo for the task data file.
      *
-     * @return todo data in Kafka's storage format
+     * @return Todo data in Kafka's storage format.
      */
     @Override
     public String toDataString() {
