@@ -12,7 +12,7 @@ Got deadlines, errands, and a suspiciously long list of things you'll do "later"
 I'm a desktop task manager: you type commands into our chat, and I keep your todos, deadlines,
 and events together. You bring the hustle. I'll be your secretary and emotional support >////<
 
-![Kafka chat showing a supper deadline being added and marked as done](UI.png.png)
+![Kafka chat showing a supper deadline being added and marked as done](Ui.png.png)
 
 *That's us, king. Your commands go in the box at the bottom; my replies appear in the chat.*
 
